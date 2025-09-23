@@ -19,21 +19,46 @@ const App: React.FC = () => {
     
     if (userIdParam) {
       setUserId(userIdParam);
-      const role = getUserRole(userIdParam);
-      setUserRole(role);
       
-      if (!role) {
-        console.warn(`No role found for user ID: ${userIdParam}`);
-        // You might want to redirect to an error page or show a message
+      // Try to get role immediately
+      let role = getUserRole(userIdParam);
+      
+      if (role) {
+        setUserRole(role);
+        setLoading(false);
+      } else {
+        // If no role found, wait for role mappings to load and retry
+        console.log(`Waiting for role mappings to load for user: ${userIdParam}`);
+        
+        const checkForRole = () => {
+          const retryRole = getUserRole(userIdParam);
+          if (retryRole) {
+            setUserRole(retryRole);
+            setLoading(false);
+          } else {
+            // Retry after a short delay
+            setTimeout(checkForRole, 100);
+          }
+        };
+        
+        // Start checking after a brief delay to allow for async loading
+        setTimeout(checkForRole, 200);
+        
+        // Fallback timeout - stop trying after 5 seconds
+        setTimeout(() => {
+          if (!userRole) {
+            console.warn(`No role found for user ID after timeout: ${userIdParam}`);
+            setLoading(false);
+          }
+        }, 5000);
       }
     } else {
       console.warn('No user ID found in URL parameters');
       // For development, you can set a default admin user
       setUserId('admin001');
       setUserRole(getUserRole('admin001'));
+      setLoading(false);
     }
-    
-    setLoading(false);
   }, []);
 
   if (loading) {
