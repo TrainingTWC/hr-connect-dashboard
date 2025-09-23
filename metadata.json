@@ -1,0 +1,5 @@
+{
+  "name": "HR Connect Dashboard",
+  "description": "A comprehensive dashboard to visualize and analyze data from the HR Connect checklist submissions, providing insights into employee feedback and overall satisfaction.",
+  "requestFramePermissions": []
+}

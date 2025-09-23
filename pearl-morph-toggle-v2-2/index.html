@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pearl Morph Toggle — No-Overflow Morph</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="panel">
+      <h1>Pearl Morph Toggle (No-Overflow)</h1>
+      <p>Knob is fixed-size; morph is internal <code>::before</code> scale. Pill + knob are hard-clipped.</p>
+
+      <button id="themeToggle" class="toggle" aria-pressed="false" aria-label="Toggle dark mode">
+        <span class="track"></span>
+        <span class="sweep"></span>
+        <span class="pearl">
+          <img class="glyph glyph--light" src="./assets/light mode.svg" alt="Light" />
+          <img class="glyph glyph--dark"  src="./assets/dark mode.svg"  alt="Dark"  />
+        </span>
+      </button>
+    </section>
+  </main>
+  <script src="./script.js"></script>
+</body>
+</html>
