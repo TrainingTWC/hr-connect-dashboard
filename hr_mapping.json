@@ -1858,5 +1858,25 @@
     "region": "West",
     "hrHeadId": "H2081",
     "lmsHeadId": "H541"
+  },
+  {
+    "locationName": "H3237 Test Store 1",
+    "storeId": "S901",
+    "areaManagerId": "H9001",
+    "hrbpId": "H3237",
+    "regionalHrId": "H3237",
+    "region": "South",
+    "hrHeadId": "H2081",
+    "lmsHeadId": "H541"
+  },
+  {
+    "locationName": "H3237 Test Store 2",
+    "storeId": "S902",
+    "areaManagerId": "H9002",
+    "hrbpId": "H3237",
+    "regionalHrId": "H3237",
+    "region": "South",
+    "hrHeadId": "H2081",
+    "lmsHeadId": "H541"
   }
 ]
