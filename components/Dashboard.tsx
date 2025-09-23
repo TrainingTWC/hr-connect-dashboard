@@ -189,6 +189,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
   }, [userRole, allHRPersonnel]);
 
   const availableRegions = useMemo(() => {
+    // Admin users can see all regions
+    if (userRole.role === 'admin') {
+      return REGIONS;
+    }
+    // Other users restricted to their specific region
     if (userRole.region) {
       return [userRole.region];
     }
