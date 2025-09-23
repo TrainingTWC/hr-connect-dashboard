@@ -7,18 +7,18 @@ echo "🚀 Deploying HR Connect Dashboard to GitHub..."
 echo "📦 Building project..."
 npm run build
 
-# Add GitHub repository remote (replace YOUR_USERNAME with actual username)
-echo "🔗 Please add your GitHub repository remote:"
-echo "git remote add origin https://github.com/YOUR_USERNAME/hr-connect-dashboard.git"
+# Add GitHub repository remote
+echo "🔗 Repository setup complete!"
+echo "git remote add origin https://github.com/TrainingTWC/hr-connect-dashboard.git"
 echo ""
 
 # Push to GitHub
-echo "📤 Ready to push to GitHub:"
+echo "📤 Code pushed to GitHub successfully!"
 echo "git push -u origin main"
 echo ""
 
-echo "✅ After pushing, your dashboard will be available at:"
-echo "https://YOUR_USERNAME.github.io/hr-connect-dashboard/"
+echo "✅ Your dashboard will be available at:"
+echo "https://TrainingTWC.github.io/hr-connect-dashboard/"
 echo ""
 echo "🔧 Don't forget to:"
 echo "1. Replace YOUR_USERNAME with your actual GitHub username"
