@@ -25,10 +25,38 @@ const loadMappingData = async (): Promise<any[]> => {
 const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   const mappings: UserRole[] = [];
   
-  // Admin user - can see everything
+  // Admin users - can see everything
   mappings.push({
     userId: 'admin001',
     name: 'System Admin',
+    role: 'admin',
+    allowedStores: [],
+    allowedAMs: [],
+    allowedHRs: []
+  });
+
+  // Super Admin users - H541, H2081, H3237
+  mappings.push({
+    userId: 'H541',
+    name: 'H541 - Super Admin',
+    role: 'admin',
+    allowedStores: [],
+    allowedAMs: [],
+    allowedHRs: []
+  });
+
+  mappings.push({
+    userId: 'H2081',
+    name: 'H2081 - Super Admin',
+    role: 'admin',
+    allowedStores: [],
+    allowedAMs: [],
+    allowedHRs: []
+  });
+
+  mappings.push({
+    userId: 'H3237',
+    name: 'H3237 - Super Admin',
     role: 'admin',
     allowedStores: [],
     allowedAMs: [],
@@ -206,19 +234,25 @@ export const getUserRole = (userId: string): UserRole | null => {
 };
 
 export const canAccessStore = (userRole: UserRole, storeId: string): boolean => {
-  // If allowedStores is empty, user can access all stores (admin, hr_head, lms_head)
+  // Admin users can access everything
+  if (userRole.role === 'admin') return true;
+  // If allowedStores is empty, user can access all stores (hr_head, lms_head)
   if (userRole.allowedStores.length === 0) return true;
   return userRole.allowedStores.includes(storeId);
 };
 
 export const canAccessAM = (userRole: UserRole, amId: string): boolean => {
-  // If allowedAMs is empty, user can access all AMs (admin, hr_head, lms_head)
+  // Admin users can access everything
+  if (userRole.role === 'admin') return true;
+  // If allowedAMs is empty, user can access all AMs (hr_head, lms_head)
   if (userRole.allowedAMs.length === 0) return true;
   return userRole.allowedAMs.includes(amId);
 };
 
 export const canAccessHR = (userRole: UserRole, hrId: string): boolean => {
-  // If allowedHRs is empty, user can access all HR personnel (admin, hr_head, lms_head)
+  // Admin users can access everything
+  if (userRole.role === 'admin') return true;
+  // If allowedHRs is empty, user can access all HR personnel (hr_head, lms_head)
   if (userRole.allowedHRs.length === 0) return true;
   return userRole.allowedHRs.includes(hrId);
 };
