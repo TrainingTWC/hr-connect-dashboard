@@ -218,19 +218,57 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   return mappings;
 };
 
-// Initialize with empty array, will be populated when mapping data loads
-let ROLE_MAPPINGS: UserRole[] = createRoleMappings([]);
+// Initialize with super admin users immediately
+let ROLE_MAPPINGS: UserRole[] = [
+  {
+    userId: 'admin001',
+    name: 'System Admin',
+    role: 'admin',
+    allowedStores: [],
+    allowedAMs: [],
+    allowedHRs: []
+  },
+  {
+    userId: 'H541',
+    name: 'H541 - Super Admin',
+    role: 'admin',
+    allowedStores: [],
+    allowedAMs: [],
+    allowedHRs: []
+  },
+  {
+    userId: 'H2081',
+    name: 'H2081 - Super Admin',
+    role: 'admin',
+    allowedStores: [],
+    allowedAMs: [],
+    allowedHRs: []
+  },
+  {
+    userId: 'H3237',
+    name: 'H3237 - Super Admin',
+    role: 'admin',
+    allowedStores: [],
+    allowedAMs: [],
+    allowedHRs: []
+  }
+];
 
-// Load mapping data and update roles
+// Load mapping data and update roles, but keep super admins
 loadMappingData().then(data => {
-  ROLE_MAPPINGS = createRoleMappings(data);
-  console.log(`Loaded ${ROLE_MAPPINGS.length} role mappings`);
+  const allMappings = createRoleMappings(data);
+  ROLE_MAPPINGS = allMappings;
+  console.log(`Loaded ${ROLE_MAPPINGS.length} role mappings including super admins`);
 }).catch(error => {
-  console.warn('Using fallback role mappings');
+  console.warn('Using fallback role mappings with super admins only');
+  // Keep the initial super admin mappings if loading fails
 });
 
 export const getUserRole = (userId: string): UserRole | null => {
-  return ROLE_MAPPINGS.find(role => role.userId === userId) || null;
+  console.log(`Looking for user: ${userId}, Available roles:`, ROLE_MAPPINGS.map(r => r.userId));
+  const role = ROLE_MAPPINGS.find(role => role.userId === userId) || null;
+  console.log(`Found role for ${userId}:`, role);
+  return role;
 };
 
 export const canAccessStore = (userRole: UserRole, storeId: string): boolean => {
