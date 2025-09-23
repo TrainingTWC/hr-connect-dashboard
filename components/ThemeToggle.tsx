@@ -76,8 +76,8 @@ const ThemeToggle: React.FC = () => {
       <span className="track"></span>
       <span className="sweep"></span>
       <span ref={pearlRef} className="pearl">
-        <img className="glyph glyph--light" src="/toggle/assets/light mode.svg" alt="Light" />
-        <img className="glyph glyph--dark" src="/toggle/assets/dark mode.svg" alt="Dark" />
+        <img className="glyph glyph--light" src="/hr-connect-dashboard/toggle/assets/light mode.svg" alt="Light" />
+        <img className="glyph glyph--dark" src="/hr-connect-dashboard/toggle/assets/dark mode.svg" alt="Dark" />
       </span>
     </button>
   );
