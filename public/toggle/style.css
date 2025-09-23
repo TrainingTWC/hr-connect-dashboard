@@ -12,18 +12,6 @@
   --knob: 44px;
   --glyph: 28px;
 }
-
-/* Mobile responsive sizing */
-@media (max-width: 640px) {
-  :root {
-    --toggle-w: 96px;
-    --toggle-h: 46px;
-    --pad: 5px;
-    --knob: 36px;
-    --glyph: 22px;
-  }
-}
-
 @media (prefers-color-scheme: light) {
   :root { --bg:#f6f7fb; --fg:#0f1222; --card:#ffffff; --rim: rgba(0,0,0,.08); --accent:#2a7cf7; }
 }
@@ -107,32 +95,30 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system
 
 /* Glyphs centered inside knob */
 .glyph {
-  position: absolute; 
-  top: 50%; 
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: var(--glyph); 
-  height: var(--glyph);
+  position: absolute; inset: 0; margin: auto;
+  width: var(--glyph); height: var(--glyph);
   transition: opacity .45s ease, transform .45s ease;
-  pointer-events: none;
-  z-index: 10;
-}
-.glyph--light { 
-  opacity: 1; 
-  transform: translate(-50%, -50%) scale(1); 
-}
-.glyph--dark  { 
-  opacity: 0; 
-  transform: translate(-50%, -50%) scale(.85) rotate(-6deg); 
 }
 
-/* Right state */
-.toggle.is-dark .pearl { transform: translate3d(var(--travel), -50%, 0); }
+/* Light mode state - show sun, hide moon */
+.toggle .glyph--light { 
+  opacity: 1 !important; 
+  transform: scale(1) !important; 
+}
+.toggle .glyph--dark  { 
+  opacity: 0 !important; 
+  transform: scale(.85) rotate(-6deg) !important; 
+}
+
+/* Dark mode state - hide sun, show moon */
+.toggle.is-dark .pearl { 
+  transform: translate3d(var(--travel), -50%, 0) !important; 
+}
 .toggle.is-dark .glyph--light { 
-  opacity: 0; 
-  transform: translate(-50%, -50%) scale(.85) rotate(6deg); 
+  opacity: 0 !important; 
+  transform: scale(.85) rotate(6deg) !important; 
 }
 .toggle.is-dark .glyph--dark  { 
-  opacity: 1; 
-  transform: translate(-50%, -50%) scale(1); 
+  opacity: 1 !important; 
+  transform: scale(1) !important; 
 }
