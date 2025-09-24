@@ -1,70 +1,108 @@
-// Haptic feedback utilities for mobile devices
+// Enhanced haptic feedback utilities optimized for modern Android devices (Samsung S23, etc.)
 
-export const triggerHapticFeedback = (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light') => {
+export const triggerHapticFeedback = (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'medium') => {
   // Check if the device supports haptic feedback
   if ('vibrate' in navigator) {
     switch (type) {
       case 'light':
-        navigator.vibrate(10);
+        // Short, crisp tap - like button press
+        navigator.vibrate(15);
         break;
       case 'medium':
-        navigator.vibrate(20);
+        // Medium intensity - like selection feedback
+        navigator.vibrate(25);
         break;
       case 'heavy':
-        navigator.vibrate(50);
+        // Strong feedback - like confirmation
+        navigator.vibrate(40);
         break;
       case 'success':
-        navigator.vibrate([25, 50, 25]);
+        // Double tap pattern - like successful action
+        navigator.vibrate([30, 20, 30]);
         break;
       case 'warning':
-        navigator.vibrate([50, 100, 50]);
+        // Triple tap pattern - attention grabbing
+        navigator.vibrate([20, 15, 20, 15, 20]);
         break;
       case 'error':
-        navigator.vibrate([100, 50, 100, 50, 100]);
+        // Strong error pattern - unmistakable feedback
+        navigator.vibrate([50, 30, 50, 30, 50]);
         break;
       default:
-        navigator.vibrate(10);
+        navigator.vibrate(25);
     }
   }
 
-  // For iOS devices that support Taptic Engine (iOS 10+)
-  if ('Taptic' in window || 'webkit' in window) {
+  // Enhanced iOS Taptic Engine support
+  if (typeof window !== 'undefined') {
     try {
-      // Try to use iOS Haptic Feedback API if available
+      // Modern iOS Haptic Feedback API
       if ('HapticFeedback' in window) {
+        const hapticAPI = (window as any).HapticFeedback;
         switch (type) {
           case 'light':
-            (window as any).HapticFeedback.impact({ style: 'light' });
+            hapticAPI.impact({ style: 'light' });
             break;
           case 'medium':
-            (window as any).HapticFeedback.impact({ style: 'medium' });
+            hapticAPI.impact({ style: 'medium' });
             break;
           case 'heavy':
-            (window as any).HapticFeedback.impact({ style: 'heavy' });
+            hapticAPI.impact({ style: 'heavy' });
             break;
           case 'success':
-            (window as any).HapticFeedback.notification({ type: 'success' });
+            hapticAPI.notification({ type: 'success' });
             break;
           case 'warning':
-            (window as any).HapticFeedback.notification({ type: 'warning' });
+            hapticAPI.notification({ type: 'warning' });
             break;
           case 'error':
-            (window as any).HapticFeedback.notification({ type: 'error' });
+            hapticAPI.notification({ type: 'error' });
             break;
         }
       }
+      // Webkit-based haptic support
+      else if ('webkit' in window && (window as any).webkit?.messageHandlers?.haptic) {
+        (window as any).webkit.messageHandlers.haptic.postMessage({ type });
+      }
     } catch (e) {
-      // Fallback to vibrate if Taptic Engine fails
-      console.log('Haptic feedback not available, using vibrate fallback');
+      console.log('Advanced haptic feedback not available, using standard vibrate');
     }
   }
 };
 
+// Enhanced haptic feedback functions with stronger defaults
 export const hapticFeedback = {
-  light: () => triggerHapticFeedback('light'),
-  medium: () => triggerHapticFeedback('medium'),
-  heavy: () => triggerHapticFeedback('heavy'),
+  // Light tap for UI interactions (theme toggle, etc.)
+  tap: () => triggerHapticFeedback('light'),
+  
+  // Medium feedback for selections and responses
+  select: () => triggerHapticFeedback('medium'),
+  
+  // Heavy feedback for important actions
+  confirm: () => triggerHapticFeedback('heavy'),
+  
+  // Success pattern for completed actions
   success: () => triggerHapticFeedback('success'),
+  
+  // Warning pattern for validation issues
   warning: () => triggerHapticFeedback('warning'),
+  
+  // Error pattern for failures
   error: () => triggerHapticFeedback('error'),
+  
+  // Custom strong feedback for premium feel (like ChatGPT app)
+  strong: () => {
+    if ('vibrate' in navigator) {
+      // Strong, satisfying feedback pattern
+      navigator.vibrate([35, 10, 35]);
+    }
+  },
+  
+  // Ultra-strong feedback for major actions
+  ultraStrong: () => {
+    if ('vibrate' in navigator) {
+      // Very strong pattern similar to premium apps
+      navigator.vibrate([50, 15, 50, 15, 30]);
+    }
+  }
 };

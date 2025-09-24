@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL } from '../constants';
 import { Question, Choice, Store } from '../types';
 import { UserRole, canAccessStore, canAccessAM, canAccessHR } from '../roleMapping';
-import { triggerHapticFeedback } from '../utils/haptics';
+import { hapticFeedback } from '../utils/haptics';
 import LoadingOverlay from './LoadingOverlay';
 import hrMappingData from '../src/hr_mapping.json';
 
@@ -332,8 +332,8 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   };
 
   const handleChange = (id: string, value: string) => {
-    // Trigger haptic feedback for survey responses
-    triggerHapticFeedback('light');
+    // Trigger strong haptic feedback for survey responses (like ChatGPT app)
+    hapticFeedback.select();
     
     setResponses(prev => {
       const next = {...prev, [id]: value};
@@ -401,7 +401,7 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
       const el = document.querySelector(`[name="${validation.missing}"]`);
       if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
       alert('Please answer all required questions.');
-      triggerHapticFeedback('error');
+      hapticFeedback.error();
       return;
     }
     
@@ -412,12 +412,12 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
       await logDataToGoogleSheets();
       
       alert('Survey submitted successfully!');
-      triggerHapticFeedback('success');
+      hapticFeedback.ultraStrong(); // Ultra-strong success feedback
       setSubmitted(true);
     } catch (error) {
       console.error('Submission error:', error);
       alert('Error submitting survey. Please try again.');
-      triggerHapticFeedback('error');
+      hapticFeedback.error();
     } finally {
       setIsLoading(false);
     }

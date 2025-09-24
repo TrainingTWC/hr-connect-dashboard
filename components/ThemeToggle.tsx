@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { triggerHapticFeedback } from '../utils/haptics';
+import { hapticFeedback } from '../utils/haptics';
 import lightIconUrl from '@/assets/light mode.svg';
 import darkIconUrl from '@/assets/dark mode.svg';
 
@@ -8,7 +8,8 @@ const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   const handleClick = () => {
-    triggerHapticFeedback('light');
+    // Use strong haptic feedback for theme toggle (like premium apps)
+    hapticFeedback.strong();
     toggleTheme();
   };
 
