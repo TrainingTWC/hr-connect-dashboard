@@ -754,13 +754,28 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
           doc.text('Individual Submissions', 14, y);
           y += 8;
 
-          const submissionData = filteredSubmissions.map((submission, index) => [
-            (index + 1).toString(),
-            submission.empName || 'N/A',
-            submission.storeName || 'N/A',
-            new Date(submission.submissionTime).toLocaleDateString(),
-            `${submission.percent || 0}%`
-          ]);
+          const submissionData = filteredSubmissions.map((submission, index) => {
+            // Handle date formatting with fallback for invalid dates
+            let formattedDate = 'N/A';
+            if (submission.submissionTime) {
+              try {
+                const date = new Date(submission.submissionTime);
+                if (!isNaN(date.getTime())) {
+                  formattedDate = date.toLocaleDateString();
+                }
+              } catch (error) {
+                console.warn('Invalid date format:', submission.submissionTime);
+              }
+            }
+            
+            return [
+              (index + 1).toString(),
+              submission.empName || 'N/A',
+              submission.storeName || 'N/A',
+              formattedDate,
+              `${submission.percent || 0}%`
+            ];
+          });
 
           autoTable(doc, {
             startY: y,
