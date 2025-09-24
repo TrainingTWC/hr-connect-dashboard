@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL } from '../constants';
 import { Question, Choice, Store } from '../types';
 import { UserRole, canAccessStore, canAccessAM, canAccessHR } from '../roleMapping';
+import hrMappingData from '../src/hr_mapping.json';
 
 // Google Sheets endpoint for logging data
-const LOG_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzVpp1sziQozQyI_3KLtQGumjPtMMT_iBFEqzzU8g9hfdizxoO5D4wHpW5S-CYYJ8V7IA/exec';
+const LOG_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxW541QsQc98NKMVh-lnNBnINskIqD10CnQHvGsW_R2SLASGSdBDN9lTGj1gznlNbHORQ/exec';
 
 interface SurveyResponse {
   [key: string]: string;
@@ -26,6 +27,8 @@ interface SurveyProps {
 }
 
 const Survey: React.FC<SurveyProps> = ({ userRole }) => {
+  console.log('Survey component mounted with userRole:', userRole);
+  
   const [responses, setResponses] = useState<SurveyResponse>(() => {
     try { 
       return JSON.parse(localStorage.getItem('hr_resp') || '{}'); 
@@ -40,51 +43,76 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
       stored = JSON.parse(localStorage.getItem('hr_meta') || '{}'); 
     } catch(e) {}
     
-    // Get HR info from URL parameters
+    // Get HR info from URL parameters (only HR fills survey)
     const urlParams = new URLSearchParams(window.location.search);
     const hrId = urlParams.get('hrId') || urlParams.get('hr_id') || (stored as any).hrId || '';
     const hrName = urlParams.get('hrName') || urlParams.get('hr_name') || (stored as any).hrName || '';
+    
+    console.log('Initial HR lookup - ID:', hrId, 'Name:', hrName);
+    console.log('HR_PERSONNEL array:', HR_PERSONNEL);
     
     // If HR ID is provided but no name, try to find it from HR_PERSONNEL
     let finalHrName = hrName;
     if (hrId && !hrName) {
       const hrPerson = HR_PERSONNEL.find(hr => hr.id === hrId);
+      console.log('Found HR person for ID', hrId, ':', hrPerson);
       if (hrPerson) {
         finalHrName = hrPerson.name;
+        console.log('Set final HR name to:', finalHrName);
       }
     }
     
-    return {
+    const result = {
       hrName: finalHrName,
       hrId: hrId,
-      amName: (stored as any).amName || '',
-      amId: (stored as any).amId || '',
+      amName: (stored as any).amName || '', // AM will be auto-filled from HR mapping
+      amId: (stored as any).amId || '',     // AM will be auto-filled from HR mapping
       empName: (stored as any).empName || '',
       empId: (stored as any).empId || '',
       storeName: (stored as any).storeName || '',
       storeId: (stored as any).storeId || ''
     };
+    
+    console.log('Initial meta state:', result);
+    return result;
   });
 
   const [submitted, setSubmitted] = useState(false);
   const [allStores, setAllStores] = useState<Store[]>([]);
+  const [filteredStoresByHR, setFilteredStoresByHR] = useState<Store[]>([]);
 
   // Auto-fetch HR info from URL on component mount and save to localStorage
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const hrId = urlParams.get('hrId') || urlParams.get('hr_id');
     const hrName = urlParams.get('hrName') || urlParams.get('hr_name');
+    const clearCache = urlParams.get('clear');
+    
+    // Clear localStorage if requested
+    if (clearCache) {
+      try {
+        localStorage.removeItem('hr_meta');
+        localStorage.removeItem('hr_resp');
+        console.log('Cleared localStorage cache');
+      } catch(e) {}
+    }
     
     if (hrId || hrName) {
       setMeta(prev => {
-        let finalHrName = hrName || prev.hrName;
+        let finalHrName = hrName || '';
         let finalHrId = hrId || prev.hrId;
         
-        // If HR ID is provided but no name, try to find it from HR_PERSONNEL
-        if (finalHrId && !finalHrName) {
+        // Always try to find HR name from ID, even if we have a name
+        if (finalHrId) {
+          console.log('Looking up HR name for ID:', finalHrId);
+          console.log('Available HR_PERSONNEL:', HR_PERSONNEL.map(hr => ({ id: hr.id, name: hr.name })));
           const hrPerson = HR_PERSONNEL.find(hr => hr.id === finalHrId);
           if (hrPerson) {
+            console.log('Found HR person:', hrPerson);
             finalHrName = hrPerson.name;
+          } else {
+            console.warn('No HR person found for ID:', finalHrId);
+            console.log('Searched in:', HR_PERSONNEL);
           }
         }
         
@@ -99,8 +127,17 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
         const newMeta = {
           ...prev,
           hrName: finalHrName,
-          hrId: finalHrId
+          hrId: finalHrId,
+          // Reset other fields when HR changes
+          amName: finalHrId !== prev.hrId ? '' : prev.amName,
+          amId: finalHrId !== prev.hrId ? '' : prev.amId,
+          empName: prev.empName,
+          empId: prev.empId,
+          storeName: finalHrId !== prev.hrId ? '' : prev.storeName,
+          storeId: finalHrId !== prev.hrId ? '' : prev.storeId
         };
+        
+        console.log('Updated HR meta:', newMeta);
         
         // Save to localStorage
         try { 
@@ -114,10 +151,10 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
 
   // Load stores from hr_mapping.json
   useEffect(() => {
-    const loadStores = async () => {
+    console.log('Loading stores from imported hr_mapping data...');
+    const loadStores = () => {
       try {
-        const response = await fetch('/hr_mapping.json');
-        const hrMappingData = await response.json();
+        console.log('HR mapping data loaded, processing', hrMappingData.length, 'entries');
         
         const storeMap = new Map();
         
@@ -149,10 +186,75 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
     loadStores();
   }, []);
 
+  // Filter stores by HR (HR → AM → Stores flow)
+  useEffect(() => {
+    const filterStoresByHR = () => {
+      if (!meta.hrId || allStores.length === 0) {
+        setFilteredStoresByHR([]);
+        return;
+      }
+
+      try {
+        console.log('Filtering stores for HR:', meta.hrId);
+        
+        // Find stores where this HR is responsible (HRBP > Regional HR > HR Head priority)
+        const hrStoreIds = hrMappingData
+          .filter((mapping: any) => 
+            mapping.hrbpId === meta.hrId || 
+            mapping.regionalHrId === meta.hrId || 
+            mapping.hrHeadId === meta.hrId
+          )
+          .map((mapping: any) => mapping.storeId);
+        
+        console.log('Found store IDs for HR:', hrStoreIds);
+        
+        const hrStores = allStores.filter(store => hrStoreIds.includes(store.id));
+        setFilteredStoresByHR(hrStores);
+        
+        console.log('Filtered stores:', hrStores);
+        
+        // Auto-fill Area Manager based on HR
+        if (hrStores.length > 0 && !meta.amId) {
+          const firstStoreMapping = hrMappingData.find((mapping: any) => 
+            mapping.storeId === hrStores[0].id
+          );
+          
+          if (firstStoreMapping) {
+            const amId = firstStoreMapping.areaManagerId;
+            const amPerson = AREA_MANAGERS.find(am => am.id === amId);
+            
+            if (amPerson) {
+              setMeta(prev => ({
+                ...prev,
+                amId: amPerson.id,
+                amName: amPerson.name
+              }));
+            }
+          }
+        }
+        
+        console.log(`Filtered ${hrStores.length} stores for HR ${meta.hrId}`);
+      } catch (error) {
+        console.warn('Could not filter stores by HR:', error);
+        setFilteredStoresByHR([]);
+      }
+    };
+
+    filterStoresByHR();
+  }, [meta.hrId, allStores]);
+
   // Role-based filtering for available options
   const availableStores = useMemo(() => {
-    return allStores.filter(store => canAccessStore(userRole, store.id));
-  }, [userRole, allStores]);
+    // If HR ID is present, use HR-based filtering (HR fills the survey)
+    if (meta.hrId) {
+      console.log(`HR ${meta.hrId} has access to ${filteredStoresByHR.length} stores:`, filteredStoresByHR);
+      return filteredStoresByHR;
+    }
+    // Otherwise use role-based filtering for other user types
+    const roleBasedStores = allStores.filter(store => canAccessStore(userRole, store.id));
+    console.log(`Role-based filtering: ${roleBasedStores.length} stores available`, roleBasedStores);
+    return roleBasedStores;
+  }, [userRole, allStores, filteredStoresByHR, meta.hrId]);
 
   const availableAreaManagers = useMemo(() => {
     return AREA_MANAGERS.filter(am => canAccessAM(userRole, am.id));
@@ -165,6 +267,30 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   const handleMetaChange = (key: keyof SurveyMeta, value: string) => {
     setMeta(prev => {
       const next = { ...prev, [key]: value };
+      
+      // Auto-fill region when store is selected
+      if (key === 'storeId' && value) {
+        const loadRegionForStore = async () => {
+          try {
+            const response = await fetch('/hr_mapping.json');
+            const hrMappingData = await response.json();
+            const storeMapping = hrMappingData.find((mapping: any) => mapping.storeId === value);
+            
+            if (storeMapping) {
+              setMeta(current => ({
+                ...current,
+                storeName: storeMapping.locationName
+                // Region can be added here if needed
+              }));
+            }
+          } catch (error) {
+            console.warn('Could not load region for store:', error);
+          }
+        };
+        
+        loadRegionForStore();
+      }
+      
       try { 
         localStorage.setItem('hr_meta', JSON.stringify(next)); 
       } catch(e) {}
@@ -252,33 +378,14 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   const logDataToGoogleSheets = async () => {
     const score = computeScore();
     
-    // Detect region based on the selected store, AM, or HR from hr_mapping.json
+    // Detect region based on the selected store ID only from hr_mapping.json
     let detectedRegion = '';
     try {
-      const response = await fetch('/hr_mapping.json');
-      const hrMappingData = await response.json();
-      
-      // First try to find region by store ID
+      // Only try to find region by store ID
       if (meta.storeId) {
         const storeMapping = hrMappingData.find((item: any) => item.storeId === meta.storeId);
         if (storeMapping) {
           detectedRegion = storeMapping.region || '';
-        }
-      }
-      
-      // If not found by store, try by Area Manager ID
-      if (!detectedRegion && meta.amId) {
-        const amMapping = hrMappingData.find((item: any) => item.amId === meta.amId);
-        if (amMapping) {
-          detectedRegion = amMapping.region || '';
-        }
-      }
-      
-      // If still not found, try by HR ID
-      if (!detectedRegion && meta.hrId) {
-        const hrMapping = hrMappingData.find((item: any) => item.hrbpId === meta.hrId || item.regionalHrId === meta.hrId);
-        if (hrMapping) {
-          detectedRegion = hrMapping.region || '';
         }
       }
       
@@ -346,37 +453,26 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-wide text-slate-200">
-          Third Wave Coffee
-        </h1>
-        <span className="text-3xl sm:text-4xl font-black text-slate-500">|</span>
-        <h2 className="text-3xl sm:text-4xl font-black text-slate-200">
-          HR CONNECT
-        </h2>
-      </div>
-
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Survey Details Card */}
         <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
           <div className="font-bold text-gray-900 dark:text-slate-100 mb-4 text-lg">Survey Details</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">
+              <span className="mb-1 text-gray-700 dark:text-slate-300">
                 HR Name 
-                {meta.hrName && <span className="text-green-400 text-xs">(Auto-filled from URL)</span>}
+                {meta.hrName && <span className="text-green-600 dark:text-green-400 text-xs">(Auto-filled from URL)</span>}
               </span>
               {meta.hrName ? (
                 <input 
-                  className="p-3 border border-slate-600 rounded bg-slate-600 text-slate-200" 
+                  className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-gray-100 dark:bg-slate-600 text-gray-900 dark:text-slate-200" 
                   value={meta.hrName} 
                   readOnly 
                   title="Auto-filled from URL parameters"
                 />
               ) : (
                 <select
-                  className="p-3 border border-slate-600 rounded bg-slate-700 text-slate-100"
+                  className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                   value={meta.hrName || ''}
                   onChange={e => {
                     const selected = availableHRPersonnel.find(hr => hr.name === e.target.value);
@@ -392,21 +488,21 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
               )}
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">
+              <span className="mb-1 text-gray-700 dark:text-slate-300">
                 HR ID
-                {meta.hrId && <span className="text-green-400 text-xs">(Auto-filled)</span>}
+                {meta.hrId && <span className="text-green-600 dark:text-green-400 text-xs">(Auto-filled)</span>}
               </span>
               <input 
-                className="p-3 border border-slate-600 rounded bg-slate-600 text-slate-200" 
+                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-gray-100 dark:bg-slate-600 text-gray-900 dark:text-slate-200" 
                 value={meta.hrId || ''} 
                 readOnly 
                 title={meta.hrId ? "Auto-filled from URL parameters or HR selection" : "Will be filled when HR is selected"}
               />
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">Area Manager Name</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">Area Manager Name</span>
               <select
-                className="p-3 border border-slate-600 rounded bg-slate-700 text-slate-100"
+                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                 value={meta.amName || ''}
                 onChange={e => {
                   const selected = availableAreaManagers.find(am => am.name === e.target.value);
@@ -421,33 +517,33 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
               </select>
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">Area Manager ID</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">Area Manager ID</span>
               <input 
-                className="p-3 border border-slate-600 rounded bg-slate-700 text-slate-200" 
+                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200" 
                 value={meta.amId || ''} 
                 readOnly 
               />
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">Employee Name</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">Employee Name</span>
               <input 
-                className="p-3 border border-slate-600 rounded bg-slate-700 text-slate-100 focus:border-sky-400 focus:outline-none" 
+                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none" 
                 value={meta.empName} 
                 onChange={e => handleMetaChange('empName', e.target.value)} 
               />
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">Employee ID</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">Employee ID</span>
               <input 
-                className="p-3 border border-slate-600 rounded bg-slate-700 text-slate-100 focus:border-sky-400 focus:outline-none" 
+                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none" 
                 value={meta.empId} 
                 onChange={e => handleMetaChange('empId', e.target.value)} 
               />
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">Store Name</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">Store Name</span>
               <select
-                className="p-3 border border-slate-600 rounded bg-slate-700 text-slate-100"
+                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                 value={meta.storeName || ''}
                 onChange={e => {
                   const selected = availableStores.find(store => store.name === e.target.value);
@@ -462,9 +558,9 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
               </select>
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-slate-300">Store ID</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">Store ID</span>
               <input 
-                className="p-3 border border-slate-600 rounded bg-slate-700 text-slate-200" 
+                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200" 
                 value={meta.storeId} 
                 readOnly 
               />
@@ -474,8 +570,8 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
 
         {/* Questions */}
         {QUESTIONS.map(q => (
-          <div key={q.id} className="bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-            <div className="font-bold text-slate-100 mb-4">{q.title}</div>
+          <div key={q.id} className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+            <div className="font-bold text-gray-900 dark:text-slate-100 mb-4">{q.title}</div>
             
             {q.type === 'radio' && (
               <>
@@ -488,15 +584,15 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
                         value={c.label}
                         checked={responses[q.id] === c.label}
                         onChange={e => handleChange(q.id, e.target.value)}
-                        className="w-4 h-4 text-sky-400 bg-slate-700 border-slate-600 focus:ring-sky-400"
+                        className="w-4 h-4 text-sky-500 dark:text-sky-400 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 focus:ring-sky-500 dark:focus:ring-sky-400"
                       />
-                      <span className="text-slate-200">{c.label}</span>
+                      <span className="text-gray-900 dark:text-slate-200">{c.label}</span>
                     </label>
                   ))}
                 </div>
                 <div className="mt-4">
                   <textarea
-                    className="w-full p-3 border border-slate-600 rounded bg-slate-700 text-sm text-slate-100 placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                    className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none"
                     placeholder="Add remarks for this question (optional)"
                     rows={2}
                     value={responses[q.id + '_remarks'] || ''}
@@ -517,15 +613,15 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
                         value={c.label}
                         checked={responses[q.id] === c.label}
                         onChange={e => handleChange(q.id, e.target.value)}
-                        className="w-4 h-4 text-sky-400 bg-slate-700 border-slate-600 focus:ring-sky-400 mb-2"
+                        className="w-4 h-4 text-sky-500 dark:text-sky-400 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 focus:ring-sky-500 dark:focus:ring-sky-400 mb-2"
                       />
-                      <span className="text-sm text-slate-300">{c.label}</span>
+                      <span className="text-sm text-gray-700 dark:text-slate-300">{c.label}</span>
                     </label>
                   ))}
                 </div>
                 <div className="mt-4">
                   <textarea
-                    className="w-full p-3 border border-slate-600 rounded bg-slate-700 text-sm text-slate-100 placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                    className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none"
                     placeholder="Add remarks for this question (optional)"
                     rows={2}
                     value={responses[q.id + '_remarks'] || ''}
@@ -538,14 +634,14 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
             {q.type === 'input' && (
               <>
                 <input
-                  className="w-full mt-2 p-3 border border-slate-600 rounded bg-slate-700 text-slate-100 placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                  className="w-full mt-2 p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none"
                   type="text"
                   value={responses[q.id] || ''}
                   onChange={e => handleChange(q.id, e.target.value)}
                 />
                 <div className="mt-4">
                   <textarea
-                    className="w-full p-3 border border-slate-600 rounded bg-slate-700 text-sm text-slate-100 placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                    className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none"
                     placeholder="Add remarks for this question (optional)"
                     rows={2}
                     value={responses[q.id + '_remarks'] || ''}
@@ -557,7 +653,7 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
             
             {q.type === 'textarea' && (
               <textarea
-                className="w-full mt-2 p-3 border border-slate-600 rounded bg-slate-700 text-slate-100 placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                className="w-full mt-2 p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none"
                 rows={4}
                 value={responses[q.id] || ''}
                 onChange={e => handleChange(q.id, e.target.value)}
@@ -567,14 +663,14 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
         ))}
 
         {/* Submit Section */}
-        <div className="flex items-center justify-between bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-          <div className="text-sm text-slate-400">
+        <div className="flex items-center justify-between bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+          <div className="text-sm text-gray-600 dark:text-slate-400">
             All radio/scale questions are required.
           </div>
           <div className="flex gap-3">
             <button
               type="button"
-              className="px-6 py-3 border border-slate-600 rounded-lg text-slate-300 hover:bg-slate-700 transition-colors duration-200"
+              className="px-6 py-3 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200"
               onClick={handleReset}
               title="Clear all form data and responses"
             >
@@ -592,8 +688,8 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
 
       {/* Submission Summary */}
       {submitted && (
-        <div className="mt-6 bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-          <h2 className="font-bold text-slate-100 text-xl mb-4">Submission Summary</h2>
+        <div className="mt-6 bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+          <h2 className="font-bold text-gray-900 dark:text-slate-100 text-xl mb-4">Submission Summary</h2>
           
           {/* Score Bar */}
           <div className="mb-6">

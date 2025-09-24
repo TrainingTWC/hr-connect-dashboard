@@ -1,9 +1,66 @@
-
 import { Submission } from '../types';
 import { QUESTIONS, AREA_MANAGERS, STORES, HR_PERSONNEL } from '../constants';
 
-// Google Sheets endpoint for fetching data (same as logging endpoint but with GET)
-const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwutLcK3SFtLDGyjeuNMJEJzezobbR1WLKb3Vvtw8d9P9DuqfZAZXRuUArymINVK2L7Mw/exec';
+// Google Apps Script endpoint for fetching data
+const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxW541QsQc98NKMVh-lnNBnINskIqD10CnQHvGsW_R2SLASGSdBDN9lTGj1gznlNbHORQ/exec';
+
+// Cache for HR mapping data
+let hrMappingCache: any[] | null = null;
+
+// Load HR mapping data
+const loadHRMapping = async (): Promise<any[]> => {
+  if (hrMappingCache) {
+    return hrMappingCache;
+  }
+  
+  try {
+    const response = await fetch('/hr_mapping.json');
+    hrMappingCache = await response.json();
+    console.log('HR mapping loaded successfully:', hrMappingCache.length, 'entries');
+    return hrMappingCache;
+  } catch (error) {
+    console.warn('Could not load hr_mapping.json:', error);
+    return [];
+  }
+};
+
+// Get Area Manager data for HR based on mapping
+const getAMForHR = async (hrId: string): Promise<{amId: string, amName: string} | null> => {
+  const mappingData = await loadHRMapping();
+  
+  // Find stores where this HR is responsible (HRBP > Regional HR > HR Head priority)
+  const hrStores = mappingData.filter(mapping => 
+    mapping.hrbpId === hrId || 
+    mapping.regionalHrId === hrId || 
+    mapping.hrHeadId === hrId
+  );
+  
+  if (hrStores.length > 0) {
+    // Get the Area Manager from the first store (they should all have the same AM)
+    const amId = hrStores[0].areaManagerId;
+    const amPerson = AREA_MANAGERS.find(am => am.id === amId);
+    
+    return {
+      amId: amId,
+      amName: amPerson?.name || `AM ${amId}`
+    };
+  }
+  
+  return null;
+};
+
+// Get stores for an Area Manager
+const getStoresForAM = async (amId: string): Promise<{storeId: string, storeName: string, region: string}[]> => {
+  const mappingData = await loadHRMapping();
+  
+  return mappingData
+    .filter(mapping => mapping.areaManagerId === amId)
+    .map(mapping => ({
+      storeId: mapping.storeId,
+      storeName: mapping.locationName,
+      region: mapping.region
+    }));
+};
 
 const getRandomItem = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
@@ -28,14 +85,16 @@ const generateMockData = async (count: number): Promise<Submission[]> => {
     if (hrMappingData.length > 0) {
       const randomMapping = getRandomItem(hrMappingData);
       
-      // Find names from constants or use IDs
-      hr = HR_PERSONNEL.find(h => h.id === randomMapping.hrbpId) || 
-           HR_PERSONNEL.find(h => h.id === randomMapping.regionalHrId) || 
-           HR_PERSONNEL.find(h => h.id === randomMapping.hrHeadId) || 
-           { name: `HR ${randomMapping.hrbpId}`, id: randomMapping.hrbpId };
-           
+      // Get Area Manager from mapping
       am = AREA_MANAGERS.find(a => a.id === randomMapping.areaManagerId) || 
            { name: `AM ${randomMapping.areaManagerId}`, id: randomMapping.areaManagerId };
+      
+      // Determine which HR ID to use based on priority: HRBP > Regional HR > HR Head
+      let hrId = randomMapping.hrbpId || randomMapping.regionalHrId || randomMapping.hrHeadId;
+      
+      // Find HR names from constants or use IDs
+      hr = HR_PERSONNEL.find(h => h.id === hrId) || 
+           { name: `HR ${hrId}`, id: hrId };
            
       store = { name: randomMapping.locationName, id: randomMapping.storeId };
       storeRegion = randomMapping.region;
@@ -76,6 +135,7 @@ const generateMockData = async (count: number): Promise<Submission[]> => {
       empId: `E${1000 + i}`,
       storeName: store.name,
       storeID: store.id,
+      region: storeRegion,
       totalScore,
       maxScore,
       percent: Math.round((totalScore / maxScore) * 100),
@@ -85,16 +145,18 @@ const generateMockData = async (count: number): Promise<Submission[]> => {
 };
 
 // Convert Google Sheets data to Submission format
-const convertSheetsDataToSubmissions = (sheetsData: any[]): Submission[] => {
+const convertSheetsDataToSubmissions = async (sheetsData: any[]): Promise<Submission[]> => {
   if (!sheetsData || sheetsData.length === 0) {
     console.log('No data from Google Sheets to convert');
-    return []; // Return empty array instead of mock data
+    return [];
   }
 
   console.log('Converting sheets data:', sheetsData);
   console.log('Sample row structure:', sheetsData[0]);
 
-  return sheetsData.map((row: any) => {
+  const results: Submission[] = [];
+  
+  for (const row of sheetsData) {
     // Calculate score for this submission
     let totalScore = 0, maxScore = 0;
     
@@ -127,17 +189,47 @@ const convertSheetsDataToSubmissions = (sheetsData: any[]): Submission[] => {
 
     console.log(`Final scores - Total: ${finalTotalScore}, Max: ${finalMaxScore}, Percent: ${finalPercent}%`);
 
-    return {
+    // Get proper mappings for the store
+    let amId = row.amId || '';
+    let amName = row.amName || '';
+    let hrId = row.hrId || '';
+    let hrName = row.hrName || '';
+    
+    if (row.storeID || row.storeId) {
+      const storeId = row.storeID || row.storeId;
+      try {
+        const mappingData = await loadHRMapping();
+        const storeMapping = mappingData.find(mapping => mapping.storeId === storeId);
+        
+        if (storeMapping) {
+          // Get Area Manager
+          amId = storeMapping.areaManagerId;
+          const amPerson = AREA_MANAGERS.find(am => am.id === amId);
+          amName = amPerson?.name || `AM ${amId}`;
+          
+          // Get HR (Priority: HRBP > Regional HR > HR Head)
+          hrId = storeMapping.hrbpId || storeMapping.regionalHrId || storeMapping.hrHeadId;
+          const hrPerson = HR_PERSONNEL.find(hr => hr.id === hrId);
+          hrName = hrPerson?.name || `HR ${hrId}`;
+          
+          console.log(`Mapped store ${storeId} to AM: ${amName} (${amId}) and HR: ${hrName} (${hrId})`);
+        }
+      } catch (error) {
+        console.warn(`Could not map store ${storeId}:`, error);
+      }
+    }
+
+    const submission: Submission = {
       submissionTime: row.submissionTime || new Date().toISOString(),
-      hrName: row.hrName || '',
-      hrId: row.hrId || '',
-      amName: row.amName || '',
-      amId: row.amId || '',
+      hrName: hrName,
+      hrId: hrId,
+      amName: amName,
+      amId: amId,
       empName: row.empName || '',
       empId: row.empId || '',
       storeName: row.storeName || '',
-      storeID: row.storeID || row.storeId || '', // Handle both field names
-      region: row.region || row.q1 || 'Unknown', // Use region field or fallback to q1 if region is stored there
+      storeID: row.storeID || row.storeId || '',
+      region: row.region || 'Unknown',
       q1: row.q1 || '',
       q1_remarks: row.q1_remarks || '',
       q2: row.q2 || '',
@@ -166,7 +258,11 @@ const convertSheetsDataToSubmissions = (sheetsData: any[]): Submission[] => {
       maxScore: finalMaxScore,
       percent: finalPercent,
     };
-  });
+    
+    results.push(submission);
+  }
+  
+  return results;
 };
 
 export const fetchSubmissions = async (): Promise<Submission[]> => {
@@ -225,18 +321,25 @@ export const fetchSubmissions = async (): Promise<Submission[]> => {
     // Check if the received data is an array, as expected
     if (!Array.isArray(data)) {
         console.error('Data from Google Sheets is not an array:', data);
-        console.log('Invalid data format, returning empty array');
-        return [];
+        console.log('Invalid data format, generating mock data...');
+        return await generateMockData(20);
     }
     
-    const submissions = convertSheetsDataToSubmissions(data);
+    const submissions = await convertSheetsDataToSubmissions(data);
     
     console.log('Converted submissions:', submissions);
+    
+    // If no real data available, generate mock data for demo purposes
+    if (submissions.length === 0) {
+      console.log('No real submissions found, generating mock data...');
+      return await generateMockData(20);
+    }
+    
     return submissions;
   } catch (error) {
     console.error('Error fetching from Google Sheets:', error);
-    console.log('Failed to fetch data, returning empty array');
-    // Return empty array instead of mock data
-    return [];
+    console.log('Failed to fetch data, generating mock data...');
+    // Return mock data instead of empty array for demo purposes
+    return await generateMockData(20);
   }
 };

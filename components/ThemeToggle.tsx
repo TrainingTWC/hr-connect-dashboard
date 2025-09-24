@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import lightIconUrl from '@/assets/light mode.svg';
+import darkIconUrl from '@/assets/dark mode.svg';
 
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -15,10 +17,13 @@ const ThemeToggle: React.FC = () => {
     // Compute exact travel so the fixed-size knob never leaks
     const computeTravel = () => {
       const s = getComputedStyle(toggle);
-      const pad = parseFloat(s.getPropertyValue('--pad'));
-      const w = parseFloat(s.getPropertyValue('--toggle-w'));
-      const knob = parseFloat(s.getPropertyValue('--knob'));
-      const travel = w - (pad * 2 + knob);
+      // Prefer actual rendered sizes for robustness on mobile
+      const padL = parseFloat(s.paddingLeft) || parseFloat(s.getPropertyValue('--pad')) || 6;
+      const padR = parseFloat(s.paddingRight) || parseFloat(s.getPropertyValue('--pad')) || padL;
+      const w = toggle.clientWidth || parseFloat(s.width) || parseFloat(s.getPropertyValue('--toggle-w')) || 116;
+      const ps = getComputedStyle(pearl);
+      const knob = pearl.offsetWidth || parseFloat(ps.width) || parseFloat(s.getPropertyValue('--knob')) || 44;
+      const travel = Math.max(0, w - (padL + padR + knob));
       pearl.style.setProperty('--travel', travel + 'px');
     };
 
@@ -76,8 +81,12 @@ const ThemeToggle: React.FC = () => {
       <span className="track"></span>
       <span className="sweep"></span>
       <span ref={pearlRef} className="pearl">
-        <img className="glyph glyph--light" src="/toggle/assets/light mode.svg" alt="Light" />
-        <img className="glyph glyph--dark" src="/toggle/assets/dark mode.svg" alt="Dark" />
+        <span className="glyph glyph--light">
+          <img src={lightIconUrl} alt="" aria-hidden="true" />
+        </span>
+        <span className="glyph glyph--dark">
+          <img src={darkIconUrl} alt="" aria-hidden="true" />
+        </span>
       </span>
     </button>
   );

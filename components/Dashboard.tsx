@@ -7,13 +7,13 @@ import StatCard from './StatCard';
 import Loader from './Loader';
 import ScoreDistributionChart from './ScoreDistributionChart';
 import AverageScoreByManagerChart from './AverageScoreByManagerChart';
-import QuestionBreakdownChart from './QuestionBreakdownChart';
 import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL, REGIONS } from '../constants';
 import DashboardFilters from './DashboardFilters';
 import RegionPerformanceInfographic from './RegionPerformanceInfographic';
 import AMPerformanceInfographic from './AMPerformanceInfographic';
 import HRPerformanceInfographic from './HRPerformanceInfographic';
 import QuestionScoresInfographic from './QuestionScoresInfographic';
+import AMRadarChart from './AMRadarChart';
 import { UserRole, canAccessStore, canAccessAM, canAccessHR } from '../roleMapping';
 
 interface DashboardProps {
@@ -37,7 +37,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
     hr: '',
   });
 
-  // Auto-populate filters from URL parameters
+  // Auto-populate filters from URL parameters - but only when explicitly intended for dashboard filtering
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const hrId = urlParams.get('hrId') || urlParams.get('hr_id');
@@ -45,8 +45,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
     const storeId = urlParams.get('storeId') || urlParams.get('store_id');
     const amId = urlParams.get('amId') || urlParams.get('am_id');
     const region = urlParams.get('region');
+    const dashboardFilter = urlParams.get('dashboardFilter'); // Only apply filters if this param exists
     
-    if (hrId || hrName || storeId || amId || region) {
+    // Only auto-populate filters if explicitly intended for dashboard (not when just passing HR for survey)
+    if (dashboardFilter || storeId || amId || region) {
       setFilters(prev => ({
         ...prev,
         hr: hrId || prev.hr,
@@ -54,6 +56,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         am: amId || prev.am,
         region: region || prev.region
       }));
+      console.log('Dashboard filters auto-populated from URL');
+    } else {
+      console.log('Skipping auto-filter population - no dashboardFilter param');
     }
   }, []);
 
@@ -141,6 +146,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
       }
       
       const data = await fetchSubmissions();
+      console.log('Dashboard loaded data:', data.length, 'submissions');
+      console.log('Sample submission:', data[0]);
       setSubmissions(data);
       setError(null);
       setLastRefresh(new Date());
@@ -189,11 +196,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
   }, [userRole, allHRPersonnel]);
 
   const availableRegions = useMemo(() => {
-    // Admin users can see all regions
-    if (userRole.role === 'admin') {
-      return REGIONS;
-    }
-    // Other users restricted to their specific region
     if (userRole.region) {
       return [userRole.region];
     }
@@ -203,36 +205,52 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
   const filteredData = useMemo(() => {
     if (!submissions) return null;
 
+    console.log('Dashboard filtering - userRole:', userRole);
+    console.log('Dashboard filtering - raw submissions:', submissions.length);
+
     let filtered = [...submissions];
 
-    // Apply role-based filtering first
-    filtered = filtered.filter(submission => 
-      canAccessStore(userRole, submission.storeID)
-    );
+    // Apply role-based filtering
+    if (userRole) {
+      const beforeRoleFilter = filtered.length;
+      filtered = filtered.filter(submission => 
+        canAccessStore(userRole, submission.storeID)
+      );
+      console.log(`Role filtering: ${beforeRoleFilter} -> ${filtered.length} submissions`);
+    }
 
     // Filter by region
     if (filters.region) {
+      const beforeRegionFilter = filtered.length;
       filtered = filtered.filter(submission => {
         const store = allStores.find(s => s.id === submission.storeID);
         return store && store.region === filters.region;
       });
+      console.log(`Region filter (${filters.region}): ${beforeRegionFilter} -> ${filtered.length} submissions`);
     }
 
     // Filter by store
     if (filters.store) {
+      const beforeStoreFilter = filtered.length;
       filtered = filtered.filter(submission => submission.storeID === filters.store);
+      console.log(`Store filter (${filters.store}): ${beforeStoreFilter} -> ${filtered.length} submissions`);
     }
 
     // Filter by area manager
     if (filters.am) {
+      const beforeAMFilter = filtered.length;
       filtered = filtered.filter(submission => submission.amId === filters.am);
+      console.log(`AM filter (${filters.am}): ${beforeAMFilter} -> ${filtered.length} submissions`);
     }
 
     // Filter by HR personnel
     if (filters.hr) {
+      const beforeHRFilter = filtered.length;
       filtered = filtered.filter(submission => submission.hrId === filters.hr);
+      console.log(`HR filter (${filters.hr}): ${beforeHRFilter} -> ${filtered.length} submissions`);
     }
 
+    console.log('Final filtered submissions:', filtered.length);
     return filtered;
   }, [submissions, filters, userRole, allStores]);
 
@@ -945,7 +963,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
           <QuestionScoresInfographic submissions={filteredSubmissions} questions={QUESTIONS} />
           
           <div className="grid grid-cols-1 gap-6">
-            <QuestionBreakdownChart submissions={filteredSubmissions} question={QUESTIONS[7]} />
+            <AMRadarChart submissions={filteredSubmissions} />
           </div>
         </>
       ) : (

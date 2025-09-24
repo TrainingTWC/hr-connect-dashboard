@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: '/hr-connect-dashboard/',
+      // Use repo name as base path when deploying to GitHub Pages
+      base: mode === 'production' ? '/hr-connect-dashboard/' : '/',
       server: {
         port: 3000,
         host: '0.0.0.0',

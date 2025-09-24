@@ -63,12 +63,13 @@ export const REGIONS = ['North', 'South', 'West'];
 export const STORES: Store[] = MAPPED_STORES;
 
 export const HR_PERSONNEL: HRPerson[] = [
-    { name: 'HRBP H3578', id: 'H3578' },
-    { name: 'HRBP H3500', id: 'H3500' },
-    { name: 'HRBP H1746', id: 'H1746' },
-    { name: 'Regional HR H2165', id: 'H2165' },
-    { name: 'Regional HR H2081', id: 'H2081' },
-    { name: 'Regional HR H1648', id: 'H1648' },
-    { name: 'HR Head H2082', id: 'H2082' },
-    { name: 'LMS Head H541', id: 'H541' }
+    { name: 'Abhishek Singh', id: 'H3578' },
+    { name: 'Monica Kithodya', id: 'H2165' },
+    { name: 'Subin K', id: 'H2761' },
+    { name: 'Swati Raju Shetti', id: 'H1972' },
+    { name: 'Manasi Jagdish Sawant', id: 'H3603' },
+    { name: 'Thatikonda Sunil Kumar', id: 'H3247' },
+    { name: 'Swapna Sarit Padhi', id: 'H2081' },
+    { name: 'Pooja Kamerkar', id: 'HC002' },
+    { name: 'Rohit Paul', id: 'H3551' }
 ];

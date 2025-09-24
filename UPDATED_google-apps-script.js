@@ -5,6 +5,12 @@ function doPost(e) {
     var sheet = ss.getSheetByName('HR Connect');
     if (!sheet) throw new Error("Sheet 'HR Connect' not found");
 
+    // Validate/detect region based on store ID only
+    var validatedRegion = detectRegionFromStoreId(params.storeID || '');
+    
+    // Override the region parameter with the validated one
+    params.region = validatedRegion;
+
     // Header must match the row order below
     var header = [
       'Server Timestamp',
@@ -233,4 +239,32 @@ function testDoPost() {
   
   var result = doPost(testParams);
   console.log(result.getContent());
+}
+
+// Function to detect region based on store ID only
+function detectRegionFromStoreId(storeId) {
+  if (!storeId) {
+    return 'Unknown';
+  }
+  
+  // Store ID to Region mapping - based on hr_mapping.json structure
+  // Update this mapping to include all your store IDs and their regions
+  var storeRegionMapping = {
+    // North Region stores (examples from hr_mapping.json)
+    'S153': 'North',  // Lajpat Nagar
+    'S195': 'North',  // Indirapuram
+    'S202': 'North',  // India Expo Plaza
+    'S056': 'North',  // Mall of India
+    'S101': 'North',  // Sector 63
+    
+    // TODO: Add all other store IDs from hr_mapping.json
+    // You can extract all storeId-region pairs from hr_mapping.json and add them here
+    // Example format:
+    // 'S001': 'North',
+    // 'S002': 'South',
+    // 'S003': 'West',
+  };
+  
+  // Return the region for the store ID, or 'Unknown' if not found
+  return storeRegionMapping[storeId] || 'Unknown';
 }

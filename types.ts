@@ -21,6 +21,7 @@ export interface Submission {
   empId: string;
   storeName: string;
   storeID: string;
+  region?: string;
   q1: string;
   q1_remarks?: string;
   q2: string;

@@ -6,7 +6,7 @@ function doPost(e) {
     if (!sheet) throw new Error("Sheet 'HR Connect' not found");
 
     // Validate/detect region based on store ID only
-    var validatedRegion = detectRegionFromStoreId(params.storeID || params.storeId || '');
+    var validatedRegion = detectRegionFromStoreId(params.storeID || '');
     
     // Override the region parameter with the validated one
     params.region = validatedRegion;
@@ -54,40 +54,21 @@ function doPost(e) {
     ];
 
     // Ensure header row exists and matches expected header
-    var needHeader = false;
     if (sheet.getLastRow() === 0) {
-      needHeader = true;
-    } else {
-      var firstRow = sheet.getRange(1, 1, 1, header.length).getValues()[0] || [];
-      if (firstRow.length !== header.length) {
-        needHeader = true;
-      } else {
-        for (var i = 0; i < header.length; i++) {
-          if (String((firstRow[i] || '')).trim() !== String(header[i]).trim()) {
-            needHeader = true;
-            break;
-          }
-        }
-      }
-    }
-    if (needHeader) {
-      // If sheet already has data, insert a new top row for header
-      if (sheet.getLastRow() > 0) sheet.insertRowBefore(1);
-      sheet.getRange(1, 1, 1, header.length).setValues([header]);
+      sheet.appendRow(header);
     }
 
-    // Build row in the same order as header
-    var row = [
-      new Date(), // Server Timestamp
-      params.submissionTime || '',
-      params.hrName || params.HRName || '',
-      params.hrId || params.HRId || '',
-      params.amName || params.amName || '',
-      params.amId || params.amId || '',
-      params.empName || params.EmpName || '',
-      params.empId || params.EmpID || '',
-      params.storeName || params.StoreName || '',
-      params.storeID || params.storeId || '',
+    var data = [
+      new Date(),
+      params.submissionTime || new Date(),
+      params.hrName || '',
+      params.hrId || '',
+      params.amName || '',
+      params.amId || '',
+      params.empName || '',
+      params.empId || '',
+      params.storeName || '',
+      params.storeID || '',
       params.region || '',
       params.q1 || '',
       params.q1_remarks || '',
@@ -113,17 +94,16 @@ function doPost(e) {
       params.q11_remarks || '',
       params.q12 || '',
       params.q12_remarks || '',
-      params.totalScore || params.total || '',
-      params.maxScore || params.max || '',
+      params.totalScore || '',
+      params.maxScore || '',
       params.percent || ''
     ];
 
-    sheet.appendRow(row);
+    sheet.appendRow(data);
 
     return ContentService
-      .createTextOutput(JSON.stringify({ status: 'OK' }))
+      .createTextOutput(JSON.stringify({ status: 'SUCCESS' }))
       .setMimeType(ContentService.MimeType.JSON);
-
   } catch (err) {
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'ERROR', message: String(err) }))
@@ -177,7 +157,7 @@ function getDataFromSheet() {
     var jsonData = rows.map(function(row) {
       var obj = {};
       
-      // Basic info from columns A-J (as seen in the screenshot)
+      // Map the sheet columns based on the actual column positions from the screenshot
       obj.submissionTime = row[1] || '';    // Column B - Submission Time
       obj.hrName = row[2] || '';            // Column C - HR Name
       obj.hrId = row[3] || '';              // Column D - HR ID
@@ -189,34 +169,31 @@ function getDataFromSheet() {
       obj.storeID = row[9] || '';           // Column J - Store ID
       obj.region = row[10] || '';           // Column K - Region
       
-      // Survey responses from columns K onwards (based on screenshot structure)
-      // From your screenshot: K="Q1 - Work Pressure...", L="Q2 - Decision...", etc.
-      obj.q1 = row[11] || '';               // Column L - Q1 Response (Work Pressure)
+      // Questions responses - adjust these based on your actual column layout
+      obj.q1 = row[11] || '';               // Column L - Q1 Response
       obj.q1_remarks = row[12] || '';       // Column M - Q1 Remarks
-      obj.q2 = row[13] || '';               // Column N - Q2 Response (Decision Making)
+      obj.q2 = row[13] || '';               // Column N - Q2 Response  
       obj.q2_remarks = row[14] || '';       // Column O - Q2 Remarks
-      obj.q3 = row[15] || '';               // Column P - Q3 Response (Performance Reviews)
+      obj.q3 = row[15] || '';               // Column P - Q3 Response
       obj.q3_remarks = row[16] || '';       // Column Q - Q3 Remarks
-      obj.q4 = row[17] || '';               // Column R - Q4 Response (Team Treatment)
+      obj.q4 = row[17] || '';               // Column R - Q4 Response
       obj.q4_remarks = row[18] || '';       // Column S - Q4 Remarks
-      obj.q5 = row[19] || '';               // Q5 Response (Wings Training)
+      obj.q5 = row[19] || '';               // Q5 Response
       obj.q5_remarks = row[20] || '';       // Q5 Remarks
-      obj.q6 = row[21] || '';               // Q6 Response (Operational Apps)
+      obj.q6 = row[21] || '';               // Q6 Response
       obj.q6_remarks = row[22] || '';       // Q6 Remarks
-      obj.q7 = row[23] || '';               // Q7 Response (HR Handbook)
+      obj.q7 = row[23] || '';               // Q7 Response
       obj.q7_remarks = row[24] || '';       // Q7 Remarks
-      obj.q8 = row[25] || '';               // Q8 Response (Work Schedule)
+      obj.q8 = row[25] || '';               // Q8 Response
       obj.q8_remarks = row[26] || '';       // Q8 Remarks
-      obj.q9 = row[27] || '';               // Q9 Response (Team Collaboration)
+      obj.q9 = row[27] || '';               // Q9 Response
       obj.q9_remarks = row[28] || '';       // Q9 Remarks
-      obj.q10 = row[29] || '';              // Q10 Response (Helpful Colleague)
+      obj.q10 = row[29] || '';              // Q10 Response
       obj.q10_remarks = row[30] || '';      // Q10 Remarks
-      obj.q11 = row[31] || '';              // Q11 Response (Suggestions)
+      obj.q11 = row[31] || '';              // Q11 Response
       obj.q11_remarks = row[32] || '';      // Q11 Remarks
-      obj.q12 = row[33] || '';              // Q12 Response (TWC Experience)
+      obj.q12 = row[33] || '';              // Q12 Response
       obj.q12_remarks = row[34] || '';      // Q12 Remarks
-      
-      // Scoring information
       obj.totalScore = row[35] || '';       // Total Score
       obj.maxScore = row[36] || '';         // Max Score
       obj.percent = row[37] || '';          // Percent
@@ -434,4 +411,32 @@ function detectRegionFromStoreId(storeId) {
   
   // Return the region for the store ID, or 'Unknown' if not found
   return storeRegionMapping[storeId] || 'Unknown';
+}
+
+// Test function to verify the script is working
+function testDoPost() {
+  var testParams = {
+    parameter: {
+      submissionTime: new Date().toISOString(),
+      hrName: 'Test HR',
+      hrId: 'HR001',
+      amName: 'Test AM',
+      amId: 'AM001',
+      empName: 'Test Employee',
+      empId: 'EMP001',
+      storeName: 'Test Store',
+      storeID: 'S153',  // Using a real store ID to test region detection
+      region: 'This will be overridden',  // This should be overridden by detectRegionFromStoreId
+      q1: 'Test Answer 1',
+      q1_remarks: 'Test Remarks 1',
+      q2: 'Test Answer 2',
+      q2_remarks: 'Test Remarks 2',
+      totalScore: '45',
+      maxScore: '60',
+      percent: '75'
+    }
+  };
+  
+  var result = doPost(testParams);
+  console.log(result.getContent());
 }
