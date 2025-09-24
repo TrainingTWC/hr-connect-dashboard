@@ -32,62 +32,31 @@ const Login: React.FC = () => {
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-6">
-            <svg 
-              width="120" 
-              height="120" 
-              viewBox="0 0 800 600" 
-              className="drop-shadow-lg"
-            >
-              {/* Coffee cup with wave design */}
-              <g transform="translate(400,300)">
-                {/* Cup handle */}
-                <path 
-                  d="M 120 -60 Q 170 -60 170 -20 Q 170 20 120 20" 
-                  fill="none" 
-                  stroke="#2D3748" 
-                  strokeWidth="12" 
-                  className="dark:stroke-slate-300"
-                />
-                
-                {/* Cup body */}
-                <ellipse 
-                  cx="0" 
-                  cy="0" 
-                  rx="110" 
-                  ry="80" 
-                  fill="none" 
-                  stroke="#2D3748" 
-                  strokeWidth="12" 
-                  className="dark:stroke-slate-300"
-                />
-                
-                {/* Inner cup area */}
-                <ellipse 
-                  cx="0" 
-                  cy="0" 
-                  rx="95" 
-                  ry="65" 
-                  fill="#2D3748" 
-                  className="dark:fill-slate-300"
-                />
-                
-                {/* Coffee waves */}
-                <path 
-                  d="M -80 -20 Q -40 -40 0 -20 Q 40 0 80 -20" 
-                  fill="none" 
-                  stroke="white" 
-                  strokeWidth="4" 
-                  className="dark:stroke-slate-800"
-                />
-                <path 
-                  d="M -70 10 Q -30 -10 10 10 Q 50 30 90 10" 
-                  fill="none" 
-                  stroke="white" 
-                  strokeWidth="4" 
-                  className="dark:stroke-slate-800"
-                />
-              </g>
-            </svg>
+            <img 
+              src="/assets/logo.png"
+              alt="Third Wave Coffee Logo"
+              className="w-32 h-32 object-contain drop-shadow-lg bg-white rounded-2xl p-4"
+              onError={(e) => {
+                // Fallback SVG if logo.png is not found
+                const fallbackSVG = document.createElement('div');
+                fallbackSVG.className = 'w-32 h-32 bg-slate-800 dark:bg-slate-200 rounded-2xl flex items-center justify-center drop-shadow-lg';
+                fallbackSVG.innerHTML = `
+                  <svg width="80" height="80" viewBox="0 0 200 200" class="text-white dark:text-slate-800">
+                    <g transform="translate(100,100)">
+                      <path d="M 45 -20 Q 65 -20 65 0 Q 65 20 45 20" fill="none" stroke="currentColor" stroke-width="4"/>
+                      <circle cx="0" cy="0" r="40" fill="none" stroke="currentColor" stroke-width="4"/>
+                      <circle cx="0" cy="0" r="32" fill="currentColor"/>
+                      <path d="M -25 -8 Q -12 -16 0 -8 Q 12 0 25 -8" fill="none" stroke="white" stroke-width="2"/>
+                      <path d="M -20 8 Q -8 0 8 8 Q 20 16 32 8" fill="none" stroke="white" stroke-width="2"/>
+                    </g>
+                  </svg>
+                `;
+                const parent = (e.target as HTMLElement).parentElement;
+                if (parent) {
+                  parent.replaceChild(fallbackSVG, e.target as HTMLElement);
+                }
+              }}
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
             Third Wave Coffee
