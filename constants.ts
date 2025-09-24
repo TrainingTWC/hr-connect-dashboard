@@ -71,5 +71,7 @@ export const HR_PERSONNEL: HRPerson[] = [
     { name: 'Thatikonda Sunil Kumar', id: 'H3247' },
     { name: 'Swapna Sarit Padhi', id: 'H2081' },
     { name: 'Pooja Kamerkar', id: 'HC002' },
-    { name: 'Rohit Paul', id: 'H3551' }
+    { name: 'Rohit Paul', id: 'H3551' },
+    { name: 'HRBP Manager', id: 'H3237' },
+    { name: 'LMS Head', id: 'H541' }
 ];
