@@ -1,8 +1,17 @@
 
 import React from 'react';
 import ThemeToggle from './ThemeToggle';
+import { useAuth } from '../contexts/AuthContext';
 
 const Header: React.FC = () => {
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to sign out?')) {
+      logout();
+    }
+  };
+
   return (
     <header className="p-4 sm:p-6 lg:p-8">
       <div className="flex items-start justify-between">
@@ -15,7 +24,15 @@ const Header: React.FC = () => {
             HR Connect
           </h2>
         </div>
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-3">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200"
+            title="Sign out"
+          >
+            <span className="text-lg">🚪</span>
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
           <ThemeToggle />
         </div>
       </div>
