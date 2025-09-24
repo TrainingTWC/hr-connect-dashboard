@@ -52,38 +52,43 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
     const hrId = urlParams.get('hrId') || urlParams.get('hr_id') || (stored as any).hrId || '';
     const hrName = urlParams.get('hrName') || urlParams.get('hr_name') || (stored as any).hrName || '';
     
-    console.log('Initial HR lookup - ID:', hrId, 'Name:', hrName);
-    console.log('HR_PERSONNEL array:', HR_PERSONNEL);
+    console.log('🚀 Initial HR lookup - ID:', hrId, 'Name:', hrName);
+    console.log('📋 HR_PERSONNEL array:', HR_PERSONNEL);
     
-    // If HR ID is provided but no name, try to find it from HR_PERSONNEL
+    // Function to find HR by ID
+    const findHRById = (id: string) => {
+      if (!id) return null;
+      return HR_PERSONNEL.find(hr => hr.id === id || hr.id.toLowerCase() === id.toLowerCase());
+    };
+    
+    // Determine final HR name and ID
     let finalHrName = hrName;
-    if (hrId && !hrName) {
-      console.log('🔍 Attempting to lookup HR name for ID:', hrId);
-      console.log('📋 HR_PERSONNEL data structure:', HR_PERSONNEL);
-      
-      // Try exact match first
-      const hrPerson = HR_PERSONNEL.find(hr => hr.id === hrId);
-      
+    let finalHrId = hrId;
+    
+    // If we have an HR ID, always try to get the name from it
+    if (hrId) {
+      const hrPerson = findHRById(hrId);
       if (hrPerson) {
         finalHrName = hrPerson.name;
-        console.log('✅ Found HR person:', hrPerson);
-        console.log('✅ Set final HR name to:', finalHrName);
+        finalHrId = hrPerson.id; // Use the exact ID format from constants
+        console.log('✅ Found HR person by ID:', hrPerson);
       } else {
         console.warn('❌ No HR person found for ID:', hrId);
         console.log('🔍 Available HR IDs:', HR_PERSONNEL.map(hr => hr.id));
-        
-        // Try case-insensitive match
-        const hrPersonCaseInsensitive = HR_PERSONNEL.find(hr => hr.id.toLowerCase() === hrId.toLowerCase());
-        if (hrPersonCaseInsensitive) {
-          finalHrName = hrPersonCaseInsensitive.name;
-          console.log('✅ Found HR person (case-insensitive):', hrPersonCaseInsensitive);
-        }
+      }
+    }
+    // If we have a name but no ID, try to find the ID
+    else if (hrName && !hrId) {
+      const hrPerson = HR_PERSONNEL.find(hr => hr.name === hrName);
+      if (hrPerson) {
+        finalHrId = hrPerson.id;
+        console.log('✅ Found HR ID by name:', hrPerson);
       }
     }
     
     const result = {
       hrName: finalHrName,
-      hrId: hrId,
+      hrId: finalHrId,
       amName: (stored as any).amName || '', // AM will be auto-filled from HR mapping
       amId: (stored as any).amId || '',     // AM will be auto-filled from HR mapping
       empName: (stored as any).empName || '',
@@ -92,7 +97,7 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
       storeId: (stored as any).storeId || ''
     };
     
-    console.log('Initial meta state:', result);
+    console.log('🎯 Initial meta state:', result);
     return result;
   });
 
@@ -119,37 +124,35 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
     
     if (hrId || hrName) {
       setMeta(prev => {
+        // Function to find HR by ID
+        const findHRById = (id: string) => {
+          if (!id) return null;
+          return HR_PERSONNEL.find(hr => hr.id === id || hr.id.toLowerCase() === id.toLowerCase());
+        };
+        
         let finalHrName = hrName || '';
         let finalHrId = hrId || prev.hrId;
         
-        // Always try to find HR name from ID, even if we have a name
+        // If we have an HR ID, always try to get the name from it
         if (finalHrId) {
           console.log('🔍 Looking up HR name for ID:', finalHrId);
-          console.log('📋 Available HR_PERSONNEL:', HR_PERSONNEL.map(hr => ({ id: hr.id, name: hr.name })));
-          
-          const hrPerson = HR_PERSONNEL.find(hr => hr.id === finalHrId);
+          const hrPerson = findHRById(finalHrId);
           
           if (hrPerson) {
             console.log('✅ Found HR person:', hrPerson);
             finalHrName = hrPerson.name;
+            finalHrId = hrPerson.id; // Use the exact ID format from constants
           } else {
             console.warn('❌ No HR person found for ID:', finalHrId);
             console.log('🔍 Available HR IDs:', HR_PERSONNEL.map(hr => hr.id));
-            
-            // Try case-insensitive match
-            const hrPersonCaseInsensitive = HR_PERSONNEL.find(hr => hr.id.toLowerCase() === finalHrId.toLowerCase());
-            if (hrPersonCaseInsensitive) {
-              finalHrName = hrPersonCaseInsensitive.name;
-              console.log('✅ Found HR person (case-insensitive):', hrPersonCaseInsensitive);
-            }
           }
         }
-        
-        // If HR name is provided but no ID, try to find it from HR_PERSONNEL
-        if (finalHrName && !finalHrId) {
+        // If we have a name but no ID, try to find the ID
+        else if (finalHrName && !finalHrId) {
           const hrPerson = HR_PERSONNEL.find(hr => hr.name === finalHrName);
           if (hrPerson) {
             finalHrId = hrPerson.id;
+            console.log('✅ Found HR ID by name:', hrPerson);
           }
         }
         
