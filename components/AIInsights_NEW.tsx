@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Submission } from '../types';
-import { UserRole } from '../roleMapping';
-import { fetchSubmissions } from '../services/dataService';
 import { QUESTIONS } from '../constants';
 import AIOverviewHero from './ai/AIOverviewHero';
 import PriorityHeatmap from './ai/PriorityHeatmap';
@@ -14,38 +12,24 @@ import RecommendationsPanel from './ai/RecommendationsPanel';
 import InsightsCarousel from './ai/InsightsCarousel';
 
 interface AIInsightsProps {
-  userRole: UserRole | null;
+  responses: Submission[];
 }
 
-const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
-  const [responses, setResponses] = useState<Submission[]>([]);
+const AIInsights: React.FC<AIInsightsProps> = ({ responses }) => {
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await fetchSubmissions();
-        setResponses(data);
-        generateInsights(data);
-      } catch (err) {
-        console.error('Error fetching submissions for AI Insights:', err);
-        setError('Failed to load data for AI analysis');
-        setLoading(false);
-      }
-    };
+    generateInsights();
+  }, [responses]);
 
-    loadData();
-  }, [userRole]);
-
-  const generateInsights = async (data: Submission[]) => {
+  const generateInsights = async () => {
     setLoading(true);
     
     // Simulate AI processing delay
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const generatedInsights = performAIAnalysis(data);
+    const generatedInsights = performAIAnalysis(responses);
     setInsights(generatedInsights);
     setLoading(false);
   };
@@ -302,22 +286,6 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
           </h2>
           <p className="text-gray-600 dark:text-slate-400">
             Analyzing survey data patterns and generating intelligent insights
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="text-center p-12 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-700">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h3 className="text-xl font-semibold text-red-700 dark:text-red-300 mb-2">
-            Error Loading Data
-          </h3>
-          <p className="text-red-500 dark:text-red-400">
-            {error}
           </p>
         </div>
       </div>
