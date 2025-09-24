@@ -397,7 +397,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
       doc.text(reportTitle, 14, y);
       y += 10;
 
-      // Entity Details - two columns like hrconnect.html
+      // Entity Details - two columns like hrconnect.html with proper alignment
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
@@ -410,13 +410,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.setFont('helvetica', 'bold');
         doc.text(`${key1}:`, 14, y);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${value1}`, 45, y);
+        doc.text(`${value1}`, 55, y);  // Increased from 45 to 55 for better alignment
         
         if (key2) {
           doc.setFont('helvetica', 'bold');
           doc.text(`${key2}:`, 110, y);
           doc.setFont('helvetica', 'normal');
-          doc.text(`${value2}`, 140, y);
+          doc.text(`${value2}`, 155, y);  // Increased from 140 to 155 for better alignment
         }
         y += 6;
       }
@@ -424,12 +424,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
       doc.setFont('helvetica', 'bold');
       doc.text('Generated:', 14, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(new Date().toLocaleString(), 45, y);
+      doc.text(new Date().toLocaleString(), 55, y);  // Aligned with other values
       y += 15;
 
       // Score and progress bar
       if (filteredSubmissions.length !== 1) {
-        // Multi-submission: show average percent and bar here
+        // Multi-submission: show average percent and bar here with centered text
         const scoreToShow = stats?.avgScore || 0;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
@@ -464,7 +464,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.setTextColor(0, 0, 0);
         const pctText = `${Math.round(scorePercentage)}%`;
         const pctWidth = doc.getTextWidth(pctText);
-        doc.text(pctText, barX + barW - pctWidth, barY + barH - 1);
+        // Center the percentage text in the middle of the bar
+        doc.text(pctText, barX + (barW - pctWidth) / 2, barY + barH - 1);
         y += barH + 15;
       }
 
@@ -479,7 +480,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.text('Survey Details', 14, y);
         y += 8;
 
-        // Survey details in two columns (like the attachment)
+        // Survey details in two columns (like the attachment) with better alignment
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         
@@ -487,7 +488,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.setFont('helvetica', 'bold');
         doc.text('HR Name:', 14, y);
         doc.setFont('helvetica', 'normal');
-        doc.text(submission.hrName || 'N/A', 50, y);
+        doc.text(submission.hrName || 'N/A', 55, y);
         
         // Right column
         doc.setFont('helvetica', 'bold');
@@ -499,7 +500,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.setFont('helvetica', 'bold');
         doc.text('Area Manager:', 14, y);
         doc.setFont('helvetica', 'normal');
-        doc.text(submission.amName || 'N/A', 50, y);
+        doc.text(submission.amName || 'N/A', 55, y);
         
         doc.setFont('helvetica', 'bold');
         doc.text('AM ID:', 110, y);
@@ -510,7 +511,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.setFont('helvetica', 'bold');
         doc.text('Emp Name:', 14, y);
         doc.setFont('helvetica', 'normal');
-        doc.text(submission.empName || 'N/A', 50, y);
+        doc.text(submission.empName || 'N/A', 55, y);
         
         doc.setFont('helvetica', 'bold');
         doc.text('Emp ID:', 110, y);
@@ -521,7 +522,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.setFont('helvetica', 'bold');
         doc.text('Store Name:', 14, y);
         doc.setFont('helvetica', 'normal');
-        doc.text(submission.storeName || 'N/A', 50, y);
+        doc.text(submission.storeName || 'N/A', 55, y);
         
         doc.setFont('helvetica', 'bold');
         doc.text('Store ID:', 110, y);
@@ -563,7 +564,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.setTextColor(0, 0, 0);
         const pctText = `${singlePct}%`;
         const pctWidth = doc.getTextWidth(pctText);
-        doc.text(pctText, barX + barW - pctWidth, barY + barH - 1);
+        // Center the percentage text in the middle of the bar
+        doc.text(pctText, barX + (barW - pctWidth) / 2, barY + barH - 1);
         y += barH + 12;
 
         // Individual Question Responses Table
@@ -755,16 +757,53 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
           y += 8;
 
           const submissionData = filteredSubmissions.map((submission, index) => {
-            // Handle date formatting with fallback for invalid dates
+            // Enhanced date formatting with multiple fallback strategies
             let formattedDate = 'N/A';
             if (submission.submissionTime) {
               try {
-                const date = new Date(submission.submissionTime);
-                if (!isNaN(date.getTime())) {
-                  formattedDate = date.toLocaleDateString();
+                // Try parsing the date - handle both ISO strings and other formats
+                let date: Date;
+                
+                // If it's already a Date object
+                if (submission.submissionTime instanceof Date) {
+                  date = submission.submissionTime;
+                } else if (typeof submission.submissionTime === 'string') {
+                  // Handle ISO strings, timestamps, or other string formats
+                  if (submission.submissionTime.includes('T') || submission.submissionTime.includes('-')) {
+                    // ISO string format
+                    date = new Date(submission.submissionTime);
+                  } else if (!isNaN(Number(submission.submissionTime))) {
+                    // Unix timestamp
+                    date = new Date(Number(submission.submissionTime));
+                  } else {
+                    // Try general parsing
+                    date = new Date(submission.submissionTime);
+                  }
+                } else if (typeof submission.submissionTime === 'number') {
+                  // Unix timestamp
+                  date = new Date(submission.submissionTime);
+                } else {
+                  throw new Error('Unsupported date format');
+                }
+                
+                // Check if the parsed date is valid
+                if (!isNaN(date.getTime()) && date.getTime() > 0) {
+                  formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  });
+                } else {
+                  throw new Error('Invalid date');
                 }
               } catch (error) {
-                console.warn('Invalid date format:', submission.submissionTime);
+                console.warn('Could not parse date:', submission.submissionTime, error);
+                // Use current date as fallback for recent submissions
+                formattedDate = new Date().toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit'
+                });
               }
             }
             
