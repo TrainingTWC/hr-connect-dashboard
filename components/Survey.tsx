@@ -30,6 +30,8 @@ interface SurveyProps {
 
 const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   console.log('Survey component mounted with userRole:', userRole);
+  console.log('HR_PERSONNEL imported:', HR_PERSONNEL);
+  console.log('HR_PERSONNEL length:', HR_PERSONNEL.length);
   
   const [responses, setResponses] = useState<SurveyResponse>(() => {
     try { 
@@ -56,11 +58,26 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
     // If HR ID is provided but no name, try to find it from HR_PERSONNEL
     let finalHrName = hrName;
     if (hrId && !hrName) {
+      console.log('🔍 Attempting to lookup HR name for ID:', hrId);
+      console.log('📋 HR_PERSONNEL data structure:', HR_PERSONNEL);
+      
+      // Try exact match first
       const hrPerson = HR_PERSONNEL.find(hr => hr.id === hrId);
-      console.log('Found HR person for ID', hrId, ':', hrPerson);
+      
       if (hrPerson) {
         finalHrName = hrPerson.name;
-        console.log('Set final HR name to:', finalHrName);
+        console.log('✅ Found HR person:', hrPerson);
+        console.log('✅ Set final HR name to:', finalHrName);
+      } else {
+        console.warn('❌ No HR person found for ID:', hrId);
+        console.log('🔍 Available HR IDs:', HR_PERSONNEL.map(hr => hr.id));
+        
+        // Try case-insensitive match
+        const hrPersonCaseInsensitive = HR_PERSONNEL.find(hr => hr.id.toLowerCase() === hrId.toLowerCase());
+        if (hrPersonCaseInsensitive) {
+          finalHrName = hrPersonCaseInsensitive.name;
+          console.log('✅ Found HR person (case-insensitive):', hrPersonCaseInsensitive);
+        }
       }
     }
     
@@ -107,15 +124,24 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
         
         // Always try to find HR name from ID, even if we have a name
         if (finalHrId) {
-          console.log('Looking up HR name for ID:', finalHrId);
-          console.log('Available HR_PERSONNEL:', HR_PERSONNEL.map(hr => ({ id: hr.id, name: hr.name })));
+          console.log('🔍 Looking up HR name for ID:', finalHrId);
+          console.log('📋 Available HR_PERSONNEL:', HR_PERSONNEL.map(hr => ({ id: hr.id, name: hr.name })));
+          
           const hrPerson = HR_PERSONNEL.find(hr => hr.id === finalHrId);
+          
           if (hrPerson) {
-            console.log('Found HR person:', hrPerson);
+            console.log('✅ Found HR person:', hrPerson);
             finalHrName = hrPerson.name;
           } else {
-            console.warn('No HR person found for ID:', finalHrId);
-            console.log('Searched in:', HR_PERSONNEL);
+            console.warn('❌ No HR person found for ID:', finalHrId);
+            console.log('🔍 Available HR IDs:', HR_PERSONNEL.map(hr => hr.id));
+            
+            // Try case-insensitive match
+            const hrPersonCaseInsensitive = HR_PERSONNEL.find(hr => hr.id.toLowerCase() === finalHrId.toLowerCase());
+            if (hrPersonCaseInsensitive) {
+              finalHrName = hrPersonCaseInsensitive.name;
+              console.log('✅ Found HR person (case-insensitive):', hrPersonCaseInsensitive);
+            }
           }
         }
         
