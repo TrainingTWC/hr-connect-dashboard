@@ -38,23 +38,25 @@ export const QUESTIONS: Question[] = [
 ];
 
 export const AREA_MANAGERS: AreaManager[] = [
-      { name: 'Abhishek Vilas Satardekar', id: 'H3386' },
-      { name: 'Ajay  Hatimuria', id: 'H546' },
+      { name: 'Abhishek', id: 'H3386' },
+      { name: 'Ajay  H', id: 'H546' },
       { name: 'Ajay Omnath Tiwari', id: 'H1815' },
-      { name: 'Amar  Debnath', id: 'H535' },
+      { name: 'Amar', id: 'H535' },
       { name: 'Anil  Rawat', id: 'H2262' },
-      { name: 'Gorijala  Umakanth', id: 'H3270' },
-      { name: 'Himanshu  Chaudhary', id: 'H955' },
-      { name: 'Jagruti Narendra Bhanushali', id: 'H2155' },
+      { name: 'Umakanth', id: 'H3270' },
+      { name: 'Himanshu', id: 'H955' },
+      { name: 'Jagruti', id: 'H2155' },
       { name: 'Karthick  G', id: 'H3362' },
-      { name: 'Kiran Kumar KN', id: 'H2601' },
-      { name: 'Shailesh Ramhari Sahu', id: 'H2908' },
+      { name: 'Kiran', id: 'H2601' },
+      { name: 'Shailesh', id: 'H2908' },
       { name: 'Suresh  A', id: 'H1355' },
       { name: 'Vishal Vishwanath Khatakalle', id: 'H3184' },
-      { name: 'Vishu  Kumar', id: 'H1766' },
-      { name: 'Vruchika Prathamesh Nanavare', id: 'H1575' },
-      { name: 'Nandish', id: 'H833' },
-      { name: 'Rushikesh  Aade', id: 'H2396' }
+      { name: 'Vishu', id: 'H1766' },
+      { name: 'Vruchika', id: 'H1575' },
+      { name: 'Nandish  M', id: 'H833' },
+      { name: 'Atul', id: 'H2396' },
+      { name: 'Sanjay', id: 'H2273' },
+      { name: 'Rutuja', id: 'H2758' }
 ];
 
 export const REGIONS = ['North', 'South', 'West'];
@@ -63,13 +65,13 @@ export const REGIONS = ['North', 'South', 'West'];
 export const STORES: Store[] = MAPPED_STORES;
 
 export const HR_PERSONNEL: HRPerson[] = [
-    { name: 'Abhishek Singh', id: 'H3578' },
-    { name: 'Monica Kithodya', id: 'H2165' },
-    { name: 'Subin K', id: 'H2761' },
-    { name: 'Swati Raju Shetti', id: 'H1972' },
-    { name: 'Manasi Jagdish Sawant', id: 'H3603' },
-    { name: 'Thatikonda Sunil Kumar', id: 'H3247' },
-    { name: 'Swapna Sarit Padhi', id: 'H2081' },
+    { name: 'Abhishek', id: 'H3578' },
+    { name: 'Monica', id: 'H2165' },
+    { name: 'Subin', id: 'H2761' },
+    { name: 'Swati', id: 'H1972' },
+    { name: 'Manasi', id: 'H3603' },
+    { name: 'Sunil', id: 'H3247' },
+    { name: 'Sarit', id: 'H2081' },
     { name: 'Pooja Kamerkar', id: 'HC002' },
     { name: 'Rohit Paul', id: 'H3551' },
     { name: 'Training Head', id: 'H3237' },
