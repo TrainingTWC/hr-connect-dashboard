@@ -1,39 +1,5 @@
 // Role-based access mapping for HR Connect Dashboard
 
-// Name mapping for all user IDs
-const USER_NAMES: { [key: string]: string } = {
-  'H1766': 'Vishu Kumar',
-  'H2396': 'Atul Inderyas',
-  'H535': 'Amar Debnath',
-  'H955': 'Himanshu Chaudhary',
-  'H546': 'Ajay Hatimuria',
-  'H3362': 'Karthick G',
-  'H833': 'Nandish M',
-  'H1355': 'Suresh A',
-  'H2155': 'Jagruti Narendra Bhanushali',
-  'H2601': 'Kiran Kumar KN',
-  'H3270': 'Gorijala Umakanth',
-  'H1575': 'Vruchika Prathamesh Nanavare',
-  'H2908': 'Shailesh Ramhari Sahu',
-  'H2273': 'Sanjay Madhukar Jadhav',
-  'H3386': 'Abhishek Vilas Satardekar',
-  'H2758': 'Rutuja Shirish Gaikwad',
-  'H2262': 'Anil Rawat',
-  'H3578': 'Abhishek Singh',
-  'H2165': 'Monica Kithodya',
-  'H2761': 'Subin K',
-  'H1972': 'Swati Raju Shetti',
-  'H3603': 'Manasi Jagdish Sawant',
-  'H3247': 'Thatikonda Sunil Kumar',
-  'H2081': 'Swapna Sarit Padhi',
-  'H541': 'Amritanshu Prasad'
-};
-
-// Helper function to get user name
-const getUserName = (userId: string): string => {
-  return USER_NAMES[userId] || `User ${userId}`;
-};
-
 export interface UserRole {
   userId: string;
   name: string;
@@ -47,7 +13,8 @@ export interface UserRole {
 // Load mapping data dynamically
 const loadMappingData = async (): Promise<any[]> => {
   try {
-    const response = await fetch('/hr_mapping.json');
+  const base = (import.meta as any).env?.BASE_URL || '/';
+  const response = await fetch(`${base}hr_mapping.json`);
     return await response.json();
   } catch (error) {
     console.warn('Could not load HR mapping data, using fallback');
@@ -59,38 +26,10 @@ const loadMappingData = async (): Promise<any[]> => {
 const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   const mappings: UserRole[] = [];
   
-  // Admin users - can see everything
+  // Admin user - can see everything
   mappings.push({
     userId: 'admin001',
     name: 'System Admin',
-    role: 'admin',
-    allowedStores: [],
-    allowedAMs: [],
-    allowedHRs: []
-  });
-
-  // Super Admin users with proper names
-  mappings.push({
-    userId: 'H541',
-    name: 'Amritanshu Prasad',
-    role: 'admin',
-    allowedStores: [],
-    allowedAMs: [],
-    allowedHRs: []
-  });
-
-  mappings.push({
-    userId: 'H2081',
-    name: 'Swapna Sarit Padhi',
-    role: 'admin',
-    allowedStores: [],
-    allowedAMs: [],
-    allowedHRs: []
-  });
-
-  mappings.push({
-    userId: 'H3237',
-    name: getUserName('H3237'),
     role: 'admin',
     allowedStores: [],
     allowedAMs: [],
@@ -101,7 +40,7 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
     // Fallback roles for testing
     mappings.push({
       userId: 'H1766',
-      name: getUserName('H1766'),
+      name: 'Vishu Kumar',
       role: 'area_manager',
       allowedStores: ['S027', 'S037', 'S049', 'S055'],
       allowedAMs: ['H1766'],
@@ -111,7 +50,7 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
     
     mappings.push({
       userId: 'H3578',
-      name: getUserName('H3578'),
+      name: 'HRBP H3578',
       role: 'hrbp',
       allowedStores: ['S027', 'S037', 'S049', 'S055', 'S039', 'S042'],
       allowedAMs: ['H1766', 'H2396'],
@@ -189,7 +128,7 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   areaManagers.forEach(amId => {
     mappings.push({
       userId: amId,
-      name: getUserName(amId),
+      name: `Area Manager ${amId}`,
       role: 'area_manager',
       allowedStores: amStores[amId] || [],
       allowedAMs: [amId], // Can only see themselves
@@ -202,7 +141,7 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   hrbps.forEach(hrbpId => {
     mappings.push({
       userId: hrbpId,
-      name: getUserName(hrbpId),
+      name: `HRBP ${hrbpId}`,
       role: 'hrbp',
       allowedStores: hrbpStores[hrbpId] || [],
       allowedAMs: hrbpAMs[hrbpId] || [],
@@ -216,7 +155,7 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
     const allHRs = [regionalHrId, ...(regionalHrHRBPs[regionalHrId] || [])];
     mappings.push({
       userId: regionalHrId,
-      name: getUserName(regionalHrId),
+      name: `Regional HR ${regionalHrId}`,
       role: 'regional_hr',
       allowedStores: regionalHrStores[regionalHrId] || [],
       allowedAMs: regionalHrAMs[regionalHrId] || [],
@@ -229,7 +168,7 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   hrHeads.forEach(hrHeadId => {
     mappings.push({
       userId: hrHeadId,
-      name: getUserName(hrHeadId),
+      name: `HR Head ${hrHeadId}`,
       role: 'hr_head',
       allowedStores: [], // Can see all stores
       allowedAMs: [], // Can see all AMs
@@ -241,7 +180,7 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   lmsHeads.forEach(lmsHeadId => {
     mappings.push({
       userId: lmsHeadId,
-      name: getUserName(lmsHeadId),
+      name: `LMS Head ${lmsHeadId}`,
       role: 'lms_head',
       allowedStores: [], // Can see all stores
       allowedAMs: [], // Can see all AMs
@@ -252,82 +191,35 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
   return mappings;
 };
 
-// Initialize with super admin users immediately
-let ROLE_MAPPINGS: UserRole[] = [
-  {
-    userId: 'admin001',
-    name: 'System Admin',
-    role: 'admin',
-    allowedStores: [],
-    allowedAMs: [],
-    allowedHRs: []
-  },
-  {
-    userId: 'H541',
-    name: 'H541 - Super Admin',
-    role: 'admin',
-    allowedStores: [],
-    allowedAMs: [],
-    allowedHRs: []
-  },
-  {
-    userId: 'H2081',
-    name: 'H2081 - Super Admin',
-    role: 'admin',
-    allowedStores: [],
-    allowedAMs: [],
-    allowedHRs: []
-  },
-  {
-    userId: 'H3237',
-    name: 'H3237 - Super Admin',
-    role: 'admin',
-    allowedStores: [],
-    allowedAMs: [],
-    allowedHRs: []
-  }
-];
+// Initialize with empty array, will be populated when mapping data loads
+let ROLE_MAPPINGS: UserRole[] = createRoleMappings([]);
 
-// Load mapping data and update roles, but keep super admins
+// Load mapping data and update roles
 loadMappingData().then(data => {
-  const allMappings = createRoleMappings(data);
-  ROLE_MAPPINGS = allMappings;
-  console.log(`Loaded ${ROLE_MAPPINGS.length} role mappings including super admins`);
+  ROLE_MAPPINGS = createRoleMappings(data);
+  console.log(`Loaded ${ROLE_MAPPINGS.length} role mappings`);
 }).catch(error => {
-  console.warn('Using fallback role mappings with super admins only');
-  // Keep the initial super admin mappings if loading fails
+  console.warn('Using fallback role mappings');
 });
 
 export const getUserRole = (userId: string): UserRole | null => {
-  console.log(`Looking for user: ${userId}, Available roles:`, ROLE_MAPPINGS.map(r => r.userId));
-  const role = ROLE_MAPPINGS.find(role => role.userId === userId) || null;
-  console.log(`Found role for ${userId}:`, role);
-  return role;
+  return ROLE_MAPPINGS.find(role => role.userId === userId) || null;
 };
 
 export const canAccessStore = (userRole: UserRole, storeId: string): boolean => {
-  // Admin users can access everything
-  if (userRole.role === 'admin') return true;
-  // If allowedStores is empty, user can access all stores (hr_head, lms_head)
+  // If allowedStores is empty, user can access all stores (admin, hr_head, lms_head)
   if (userRole.allowedStores.length === 0) return true;
   return userRole.allowedStores.includes(storeId);
 };
 
 export const canAccessAM = (userRole: UserRole, amId: string): boolean => {
-  // Admin users can access everything
-  if (userRole.role === 'admin') return true;
-  // If allowedAMs is empty, user can access all AMs (hr_head, lms_head)
+  // If allowedAMs is empty, user can access all AMs (admin, hr_head, lms_head)
   if (userRole.allowedAMs.length === 0) return true;
   return userRole.allowedAMs.includes(amId);
 };
 
 export const canAccessHR = (userRole: UserRole, hrId: string): boolean => {
-  // Admin users can access everything
-  if (userRole.role === 'admin') return true;
-  // If allowedHRs is empty, user can access all HR personnel (hr_head, lms_head)
+  // If allowedHRs is empty, user can access all HR personnel (admin, hr_head, lms_head)
   if (userRole.allowedHRs.length === 0) return true;
   return userRole.allowedHRs.includes(hrId);
 };
-
-// Export getUserName function for use in other components
-export { getUserName };

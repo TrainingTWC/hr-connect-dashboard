@@ -14,7 +14,8 @@ const loadHRMapping = async (): Promise<any[]> => {
   }
   
   try {
-    const response = await fetch('/hr_mapping.json');
+    const base = (import.meta as any).env?.BASE_URL || '/';
+    const response = await fetch(`${base}hr_mapping.json`);
     hrMappingCache = await response.json();
     console.log('HR mapping loaded successfully:', hrMappingCache.length, 'entries');
     return hrMappingCache;
@@ -72,7 +73,8 @@ const generateMockData = async (count: number): Promise<Submission[]> => {
   // Load hr_mapping.json to generate realistic data
   let hrMappingData: any[] = [];
   try {
-    const response = await fetch('/hr_mapping.json');
+    const base = (import.meta as any).env?.BASE_URL || '/';
+    const response = await fetch(`${base}hr_mapping.json`);
     hrMappingData = await response.json();
   } catch (error) {
     console.warn('Could not load hr_mapping.json for mock data, using fallback');

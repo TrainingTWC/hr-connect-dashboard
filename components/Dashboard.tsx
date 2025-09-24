@@ -66,7 +66,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
   useEffect(() => {
     const loadMappingData = async () => {
       try {
-        const response = await fetch('/hr_mapping.json');
+  const base = (import.meta as any).env?.BASE_URL || '/';
+  const response = await fetch(`${base}hr_mapping.json`);
         const hrMappingData = await response.json();
         
         // Extract unique stores

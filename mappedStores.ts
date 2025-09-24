@@ -25,7 +25,8 @@ const FALLBACK_STORES = [
 // Create stores array from the mapping data
 const createStoresFromMapping = async () => {
   try {
-    const response = await fetch('/hr_mapping.json');
+  const base = (import.meta as any).env?.BASE_URL || '/';
+  const response = await fetch(`${base}hr_mapping.json`);
     const hrMappingData = await response.json();
     
     const storeMap = new Map();

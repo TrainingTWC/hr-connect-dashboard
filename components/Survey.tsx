@@ -272,7 +272,8 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
       if (key === 'storeId' && value) {
         const loadRegionForStore = async () => {
           try {
-            const response = await fetch('/hr_mapping.json');
+            const base = (import.meta as any).env?.BASE_URL || '/';
+            const response = await fetch(`${base}hr_mapping.json`);
             const hrMappingData = await response.json();
             const storeMapping = hrMappingData.find((mapping: any) => mapping.storeId === value);
             
