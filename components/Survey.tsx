@@ -275,22 +275,57 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
     filterStoresByHR();
   }, [meta.hrId, allStores]);
 
-  // Role-based filtering for available options
-  const availableStores = useMemo(() => {
-    // If HR ID is present, use HR-based filtering (HR fills the survey)
-    if (meta.hrId) {
-      console.log(`HR ${meta.hrId} has access to ${filteredStoresByHR.length} stores:`, filteredStoresByHR);
-      return filteredStoresByHR;
-    }
-    // Otherwise use role-based filtering for other user types
-    const roleBasedStores = allStores.filter(store => canAccessStore(userRole, store.id));
-    console.log(`Role-based filtering: ${roleBasedStores.length} stores available`, roleBasedStores);
-    return roleBasedStores;
-  }, [userRole, allStores, filteredStoresByHR, meta.hrId]);
-
+  // Cascading filtering: HR ID → Area Managers → Stores
   const availableAreaManagers = useMemo(() => {
-    return AREA_MANAGERS.filter(am => canAccessAM(userRole, am.id));
-  }, [userRole]);
+    if (!meta.hrId) {
+      // No HR selected, show all available AMs based on role
+      return AREA_MANAGERS.filter(am => canAccessAM(userRole, am.id));
+    }
+    
+    console.log('Filtering Area Managers for HR:', meta.hrId);
+    
+    // Get unique Area Manager IDs that work under this HR
+    const hrAreaManagerIds = new Set<string>();
+    
+    hrMappingData.forEach((mapping: any) => {
+      if (mapping.hrbpId === meta.hrId || 
+          mapping.regionalHrId === meta.hrId || 
+          mapping.hrHeadId === meta.hrId) {
+        hrAreaManagerIds.add(mapping.areaManagerId);
+      }
+    });
+    
+    const filteredAMs = AREA_MANAGERS.filter(am => hrAreaManagerIds.has(am.id));
+    console.log(`Found ${filteredAMs.length} Area Managers for HR ${meta.hrId}:`, filteredAMs);
+    
+    return filteredAMs;
+  }, [userRole, meta.hrId]);
+
+  const availableStores = useMemo(() => {
+    if (!meta.amId) {
+      // No AM selected, show stores based on HR if available
+      if (meta.hrId) {
+        console.log(`HR ${meta.hrId} has access to ${filteredStoresByHR.length} stores:`, filteredStoresByHR);
+        return filteredStoresByHR;
+      }
+      // Otherwise use role-based filtering for other user types
+      const roleBasedStores = allStores.filter(store => canAccessStore(userRole, store.id));
+      console.log(`Role-based filtering: ${roleBasedStores.length} stores available`, roleBasedStores);
+      return roleBasedStores;
+    }
+    
+    console.log('Filtering Stores for Area Manager:', meta.amId);
+    
+    // Get stores that belong to this Area Manager
+    const amStoreIds = hrMappingData
+      .filter((mapping: any) => mapping.areaManagerId === meta.amId)
+      .map((mapping: any) => mapping.storeId);
+    
+    const filteredStores = allStores.filter(store => amStoreIds.includes(store.id));
+    console.log(`Found ${filteredStores.length} stores for AM ${meta.amId}:`, filteredStores);
+    
+    return filteredStores;
+  }, [userRole, allStores, filteredStoresByHR, meta.hrId, meta.amId]);
 
   const availableHRPersonnel = useMemo(() => {
     return HR_PERSONNEL.filter(hr => canAccessHR(userRole, hr.id));
@@ -524,8 +559,16 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
                   value={meta.hrName || ''}
                   onChange={e => {
                     const selected = availableHRPersonnel.find(hr => hr.name === e.target.value);
-                    handleMetaChange('hrName', selected ? selected.name : '');
-                    handleMetaChange('hrId', selected ? selected.id : '');
+                    // Reset AM and Store when HR changes
+                    setMeta(prev => ({
+                      ...prev,
+                      hrName: selected ? selected.name : '',
+                      hrId: selected ? selected.id : '',
+                      amName: '', // Reset AM when HR changes
+                      amId: '',   // Reset AM ID when HR changes
+                      storeName: '', // Reset store when HR changes
+                      storeId: ''    // Reset store ID when HR changes
+                    }));
                   }}
                 >
                   <option value="">Select HR Personnel</option>
@@ -548,17 +591,34 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
               />
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-gray-700 dark:text-slate-300">Area Manager Name</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">
+                Area Manager Name
+                {!meta.hrId && <span className="text-amber-600 dark:text-amber-400 text-xs"> (Select HR first)</span>}
+                {meta.hrId && availableAreaManagers.length === 0 && <span className="text-red-600 dark:text-red-400 text-xs"> (No AMs available for this HR)</span>}
+              </span>
               <select
-                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                className={`p-3 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-100 ${
+                  !meta.hrId || availableAreaManagers.length === 0 
+                    ? 'bg-gray-100 dark:bg-slate-600 cursor-not-allowed' 
+                    : 'bg-white dark:bg-slate-700'
+                }`}
                 value={meta.amName || ''}
+                disabled={!meta.hrId || availableAreaManagers.length === 0}
                 onChange={e => {
                   const selected = availableAreaManagers.find(am => am.name === e.target.value);
-                  handleMetaChange('amName', selected ? selected.name : '');
-                  handleMetaChange('amId', selected ? selected.id : '');
+                  // Reset store selection when AM changes
+                  setMeta(prev => ({
+                    ...prev,
+                    amName: selected ? selected.name : '',
+                    amId: selected ? selected.id : '',
+                    storeName: '', // Reset store when AM changes
+                    storeId: ''    // Reset store ID when AM changes
+                  }));
                 }}
               >
-                <option value="">Select Area Manager</option>
+                <option value="">
+                  {!meta.hrId ? 'Select HR first' : 'Select Area Manager'}
+                </option>
                 {availableAreaManagers.map(am => (
                   <option key={am.id} value={am.name}>{am.name}</option>
                 ))}
@@ -589,17 +649,29 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
               />
             </label>
             <label className="flex flex-col text-sm">
-              <span className="mb-1 text-gray-700 dark:text-slate-300">Store Name</span>
+              <span className="mb-1 text-gray-700 dark:text-slate-300">
+                Store Name
+                {!meta.amId && meta.hrId && <span className="text-amber-600 dark:text-amber-400 text-xs"> (Select Area Manager first)</span>}
+                {!meta.hrId && <span className="text-amber-600 dark:text-amber-400 text-xs"> (Select HR first)</span>}
+                {meta.amId && availableStores.length === 0 && <span className="text-red-600 dark:text-red-400 text-xs"> (No stores available for this AM)</span>}
+              </span>
               <select
-                className="p-3 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                className={`p-3 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-100 ${
+                  availableStores.length === 0 
+                    ? 'bg-gray-100 dark:bg-slate-600 cursor-not-allowed' 
+                    : 'bg-white dark:bg-slate-700'
+                }`}
                 value={meta.storeName || ''}
+                disabled={availableStores.length === 0}
                 onChange={e => {
                   const selected = availableStores.find(store => store.name === e.target.value);
                   handleMetaChange('storeName', selected ? selected.name : '');
                   handleMetaChange('storeId', selected ? selected.id : '');
                 }}
               >
-                <option value="">Select Store</option>
+                <option value="">
+                  {!meta.hrId ? 'Select HR first' : !meta.amId ? 'Select Area Manager first' : 'Select Store'}
+                </option>
                 {availableStores.map(store => (
                   <option key={store.id} value={store.name}>{store.name}</option>
                 ))}
