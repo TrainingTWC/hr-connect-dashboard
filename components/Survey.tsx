@@ -105,6 +105,14 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [allStores, setAllStores] = useState<Store[]>([]);
   const [filteredStoresByHR, setFilteredStoresByHR] = useState<Store[]>([]);
+  
+  // Search states for dropdowns
+  const [amSearchTerm, setAmSearchTerm] = useState('');
+  const [storeSearchTerm, setStoreSearchTerm] = useState('');
+  const [showAmDropdown, setShowAmDropdown] = useState(false);
+  const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+  const [selectedAmIndex, setSelectedAmIndex] = useState(-1);
+  const [selectedStoreIndex, setSelectedStoreIndex] = useState(-1);
 
   // Auto-fetch HR info from URL on component mount and save to localStorage
   useEffect(() => {
@@ -330,6 +338,23 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   const availableHRPersonnel = useMemo(() => {
     return HR_PERSONNEL.filter(hr => canAccessHR(userRole, hr.id));
   }, [userRole]);
+
+  // Filtered search results
+  const filteredAreaManagers = useMemo(() => {
+    if (!amSearchTerm) return availableAreaManagers;
+    return availableAreaManagers.filter(am => 
+      am.name.toLowerCase().includes(amSearchTerm.toLowerCase()) ||
+      am.id.toLowerCase().includes(amSearchTerm.toLowerCase())
+    );
+  }, [availableAreaManagers, amSearchTerm]);
+
+  const filteredStores = useMemo(() => {
+    if (!storeSearchTerm) return availableStores;
+    return availableStores.filter(store => 
+      store.name.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
+      store.id.toLowerCase().includes(storeSearchTerm.toLowerCase())
+    );
+  }, [availableStores, storeSearchTerm]);
 
   const handleMetaChange = (key: keyof SurveyMeta, value: string) => {
     setMeta(prev => {
@@ -590,39 +615,130 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
                 title={meta.hrId ? "Auto-filled from URL parameters or HR selection" : "Will be filled when HR is selected"}
               />
             </label>
-            <label className="flex flex-col text-sm">
+            <label className="flex flex-col text-sm relative">
               <span className="mb-1 text-gray-700 dark:text-slate-300">
                 Area Manager Name
                 {!meta.hrId && <span className="text-amber-600 dark:text-amber-400 text-xs"> (Select HR first)</span>}
                 {meta.hrId && availableAreaManagers.length === 0 && <span className="text-red-600 dark:text-red-400 text-xs"> (No AMs available for this HR)</span>}
               </span>
-              <select
-                className={`p-3 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-100 ${
-                  !meta.hrId || availableAreaManagers.length === 0 
-                    ? 'bg-gray-100 dark:bg-slate-600 cursor-not-allowed' 
-                    : 'bg-white dark:bg-slate-700'
-                }`}
-                value={meta.amName || ''}
-                disabled={!meta.hrId || availableAreaManagers.length === 0}
-                onChange={e => {
-                  const selected = availableAreaManagers.find(am => am.name === e.target.value);
-                  // Reset store selection when AM changes
-                  setMeta(prev => ({
-                    ...prev,
-                    amName: selected ? selected.name : '',
-                    amId: selected ? selected.id : '',
-                    storeName: '', // Reset store when AM changes
-                    storeId: ''    // Reset store ID when AM changes
-                  }));
-                }}
-              >
-                <option value="">
-                  {!meta.hrId ? 'Select HR first' : 'Select Area Manager'}
-                </option>
-                {availableAreaManagers.map(am => (
-                  <option key={am.id} value={am.name}>{am.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  className={`pl-3 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-100 w-full focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none ${
+                    !meta.hrId || availableAreaManagers.length === 0 
+                      ? 'bg-gray-100 dark:bg-slate-600 cursor-not-allowed' 
+                      : 'bg-white dark:bg-slate-700'
+                  }`}
+                  value={showAmDropdown ? amSearchTerm : (meta.amName || '')}
+                  disabled={!meta.hrId || availableAreaManagers.length === 0}
+                  placeholder={!meta.hrId ? 'Select HR first' : 'Search Area Manager...'}
+                  onFocus={() => {
+                    if (meta.hrId && availableAreaManagers.length > 0) {
+                      setShowAmDropdown(true);
+                      setAmSearchTerm(meta.amName || '');
+                      setSelectedAmIndex(-1);
+                    }
+                  }}
+                  onChange={e => {
+                    setAmSearchTerm(e.target.value);
+                    setShowAmDropdown(true);
+                  }}
+                  onKeyDown={e => {
+                    if (!showAmDropdown) return;
+                    
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setSelectedAmIndex(prev => 
+                        prev < filteredAreaManagers.length - 1 ? prev + 1 : 0
+                      );
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setSelectedAmIndex(prev => 
+                        prev > 0 ? prev - 1 : filteredAreaManagers.length - 1
+                      );
+                    } else if (e.key === 'Enter' && selectedAmIndex >= 0) {
+                      e.preventDefault();
+                      const selected = filteredAreaManagers[selectedAmIndex];
+                      setMeta(prev => ({
+                        ...prev,
+                        amName: selected.name,
+                        amId: selected.id,
+                        storeName: '',
+                        storeId: ''
+                      }));
+                      setAmSearchTerm('');
+                      setShowAmDropdown(false);
+                      setSelectedAmIndex(-1);
+                    } else if (e.key === 'Escape') {
+                      setShowAmDropdown(false);
+                      setSelectedAmIndex(-1);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding dropdown to allow selection
+                    setTimeout(() => {
+                      setShowAmDropdown(false);
+                      setSelectedAmIndex(-1);
+                    }, 200);
+                  }}
+                />
+                {meta.amName && !showAmDropdown && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    onClick={() => {
+                      setMeta(prev => ({
+                        ...prev,
+                        amName: '',
+                        amId: '',
+                        storeName: '',
+                        storeId: ''
+                      }));
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+                {showAmDropdown && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    🔍
+                  </div>
+                )}
+                {showAmDropdown && meta.hrId && availableAreaManagers.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {filteredAreaManagers.length === 0 ? (
+                      <div className="p-3 text-gray-500 dark:text-slate-400">No matching Area Managers found</div>
+                    ) : (
+                      filteredAreaManagers.map((am, index) => (
+                        <div
+                          key={am.id}
+                          className={`p-3 cursor-pointer border-b border-gray-100 dark:border-slate-600 last:border-b-0 ${
+                            index === selectedAmIndex 
+                              ? 'bg-sky-100 dark:bg-sky-900' 
+                              : 'hover:bg-gray-100 dark:hover:bg-slate-600'
+                          }`}
+                          onMouseDown={() => {
+                            // Reset store selection when AM changes
+                            setMeta(prev => ({
+                              ...prev,
+                              amName: am.name,
+                              amId: am.id,
+                              storeName: '', // Reset store when AM changes
+                              storeId: ''    // Reset store ID when AM changes
+                            }));
+                            setAmSearchTerm('');
+                            setShowAmDropdown(false);
+                            setSelectedAmIndex(-1);
+                          }}
+                          onMouseEnter={() => setSelectedAmIndex(index)}
+                        >
+                          <div className="font-medium text-gray-900 dark:text-slate-100">{am.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-slate-400">{am.id}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </label>
             <label className="flex flex-col text-sm">
               <span className="mb-1 text-gray-700 dark:text-slate-300">Area Manager ID</span>
@@ -648,34 +764,118 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
                 onChange={e => handleMetaChange('empId', e.target.value)} 
               />
             </label>
-            <label className="flex flex-col text-sm">
+            <label className="flex flex-col text-sm relative">
               <span className="mb-1 text-gray-700 dark:text-slate-300">
                 Store Name
                 {!meta.amId && meta.hrId && <span className="text-amber-600 dark:text-amber-400 text-xs"> (Select Area Manager first)</span>}
                 {!meta.hrId && <span className="text-amber-600 dark:text-amber-400 text-xs"> (Select HR first)</span>}
                 {meta.amId && availableStores.length === 0 && <span className="text-red-600 dark:text-red-400 text-xs"> (No stores available for this AM)</span>}
               </span>
-              <select
-                className={`p-3 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-100 ${
-                  availableStores.length === 0 
-                    ? 'bg-gray-100 dark:bg-slate-600 cursor-not-allowed' 
-                    : 'bg-white dark:bg-slate-700'
-                }`}
-                value={meta.storeName || ''}
-                disabled={availableStores.length === 0}
-                onChange={e => {
-                  const selected = availableStores.find(store => store.name === e.target.value);
-                  handleMetaChange('storeName', selected ? selected.name : '');
-                  handleMetaChange('storeId', selected ? selected.id : '');
-                }}
-              >
-                <option value="">
-                  {!meta.hrId ? 'Select HR first' : !meta.amId ? 'Select Area Manager first' : 'Select Store'}
-                </option>
-                {availableStores.map(store => (
-                  <option key={store.id} value={store.name}>{store.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  className={`pl-3 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-100 w-full focus:border-sky-500 dark:focus:border-sky-400 focus:outline-none ${
+                    availableStores.length === 0 
+                      ? 'bg-gray-100 dark:bg-slate-600 cursor-not-allowed' 
+                      : 'bg-white dark:bg-slate-700'
+                  }`}
+                  value={showStoreDropdown ? storeSearchTerm : (meta.storeName || '')}
+                  disabled={availableStores.length === 0}
+                  placeholder={!meta.hrId ? 'Select HR first' : !meta.amId ? 'Select Area Manager first' : 'Search Store...'}
+                  onFocus={() => {
+                    if (availableStores.length > 0) {
+                      setShowStoreDropdown(true);
+                      setStoreSearchTerm(meta.storeName || '');
+                      setSelectedStoreIndex(-1);
+                    }
+                  }}
+                  onChange={e => {
+                    setStoreSearchTerm(e.target.value);
+                    setShowStoreDropdown(true);
+                  }}
+                  onKeyDown={e => {
+                    if (!showStoreDropdown) return;
+                    
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setSelectedStoreIndex(prev => 
+                        prev < filteredStores.length - 1 ? prev + 1 : 0
+                      );
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setSelectedStoreIndex(prev => 
+                        prev > 0 ? prev - 1 : filteredStores.length - 1
+                      );
+                    } else if (e.key === 'Enter' && selectedStoreIndex >= 0) {
+                      e.preventDefault();
+                      const selected = filteredStores[selectedStoreIndex];
+                      handleMetaChange('storeName', selected.name);
+                      handleMetaChange('storeId', selected.id);
+                      setStoreSearchTerm('');
+                      setShowStoreDropdown(false);
+                      setSelectedStoreIndex(-1);
+                    } else if (e.key === 'Escape') {
+                      setShowStoreDropdown(false);
+                      setSelectedStoreIndex(-1);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding dropdown to allow selection
+                    setTimeout(() => {
+                      setShowStoreDropdown(false);
+                      setSelectedStoreIndex(-1);
+                    }, 200);
+                  }}
+                />
+                {meta.storeName && !showStoreDropdown && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    onClick={() => {
+                      setMeta(prev => ({
+                        ...prev,
+                        storeName: '',
+                        storeId: ''
+                      }));
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+                {showStoreDropdown && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    🔍
+                  </div>
+                )}
+                {showStoreDropdown && availableStores.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {filteredStores.length === 0 ? (
+                      <div className="p-3 text-gray-500 dark:text-slate-400">No matching stores found</div>
+                    ) : (
+                      filteredStores.map((store, index) => (
+                        <div
+                          key={store.id}
+                          className={`p-3 cursor-pointer border-b border-gray-100 dark:border-slate-600 last:border-b-0 ${
+                            index === selectedStoreIndex 
+                              ? 'bg-sky-100 dark:bg-sky-900' 
+                              : 'hover:bg-gray-100 dark:hover:bg-slate-600'
+                          }`}
+                          onMouseDown={() => {
+                            handleMetaChange('storeName', store.name);
+                            handleMetaChange('storeId', store.id);
+                            setStoreSearchTerm('');
+                            setShowStoreDropdown(false);
+                            setSelectedStoreIndex(-1);
+                          }}
+                          onMouseEnter={() => setSelectedStoreIndex(index)}
+                        >
+                          <div className="font-medium text-gray-900 dark:text-slate-100">{store.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-slate-400">{store.id}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </label>
             <label className="flex flex-col text-sm">
               <span className="mb-1 text-gray-700 dark:text-slate-300">Store ID</span>
