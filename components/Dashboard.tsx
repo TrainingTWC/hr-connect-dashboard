@@ -9,7 +9,7 @@ import Loader from './Loader';
 import NotificationOverlay from './NotificationOverlay';
 import ScoreDistributionChart from './ScoreDistributionChart';
 import AverageScoreByManagerChart from './AverageScoreByManagerChart';
-import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL, REGIONS } from '../constants';
+import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL, REGIONS, SENIOR_HR_ROLES } from '../constants';
 import DashboardFilters from './DashboardFilters';
 import RegionPerformanceInfographic from './RegionPerformanceInfographic';
 import AMPerformanceInfographic from './AMPerformanceInfographic';
@@ -232,6 +232,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
     // If HR is selected, filter AMs based on HR mapping
     if (filters.hr && hrMappingData.length > 0) {
       console.log('Filtering Area Managers for HR:', filters.hr);
+      
+      // Check if this is a senior HR role that should have access to all AMs
+      if (SENIOR_HR_ROLES.includes(filters.hr)) {
+        console.log(`HR ${filters.hr} is a senior role with access to all Area Managers (${areaManagers.length} AMs)`);
+        return areaManagers; // Return all accessible AMs without filtering
+      }
       
       // Get unique Area Manager IDs that work under this HR
       const hrAreaManagerIds = new Set<string>();

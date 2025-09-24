@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL } from '../constants';
+import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL, SENIOR_HR_ROLES } from '../constants';
 import { Question, Choice, Store } from '../types';
 import { UserRole, canAccessStore, canAccessAM, canAccessHR } from '../roleMapping';
 import { hapticFeedback } from '../utils/haptics';
@@ -291,6 +291,13 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
     }
     
     console.log('Filtering Area Managers for HR:', meta.hrId);
+    
+    // Check if this is a senior HR role that should have access to all AMs
+    if (SENIOR_HR_ROLES.includes(meta.hrId)) {
+      const allAccessibleAMs = AREA_MANAGERS.filter(am => canAccessAM(userRole, am.id));
+      console.log(`HR ${meta.hrId} is a senior role with access to all Area Managers (${allAccessibleAMs.length} AMs)`);
+      return allAccessibleAMs;
+    }
     
     // Get unique Area Manager IDs that work under this HR
     const hrAreaManagerIds = new Set<string>();

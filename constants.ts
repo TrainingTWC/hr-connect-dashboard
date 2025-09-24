@@ -77,3 +77,6 @@ export const HR_PERSONNEL: HRPerson[] = [
     { name: 'Training Head', id: 'H3237' },
     { name: 'LMS Head', id: 'H541' }
 ];
+
+// Senior HR roles that should have access to all Area Managers
+export const SENIOR_HR_ROLES = ['H2081', 'H3237', 'H541']; // Sarit, Training Head, LMS Head
