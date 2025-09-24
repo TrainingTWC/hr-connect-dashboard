@@ -1,4 +1,5 @@
 // Role-based access mapping for HR Connect Dashboard
+import { HR_PERSONNEL } from './constants';
 
 export interface UserRole {
   userId: string;
@@ -139,9 +140,12 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
 
   // Create HRBP roles
   hrbps.forEach(hrbpId => {
+    const hrPerson = HR_PERSONNEL.find(hr => hr.id === hrbpId);
+    const hrName = hrPerson ? hrPerson.name : `HRBP ${hrbpId}`;
+    
     mappings.push({
       userId: hrbpId,
-      name: `HRBP ${hrbpId}`,
+      name: hrName,
       role: 'hrbp',
       allowedStores: hrbpStores[hrbpId] || [],
       allowedAMs: hrbpAMs[hrbpId] || [],
@@ -152,10 +156,13 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
 
   // Create Regional HR roles
   regionalHrs.forEach(regionalHrId => {
+    const hrPerson = HR_PERSONNEL.find(hr => hr.id === regionalHrId);
+    const hrName = hrPerson ? hrPerson.name : `Regional HR ${regionalHrId}`;
+    
     const allHRs = [regionalHrId, ...(regionalHrHRBPs[regionalHrId] || [])];
     mappings.push({
       userId: regionalHrId,
-      name: `Regional HR ${regionalHrId}`,
+      name: hrName,
       role: 'regional_hr',
       allowedStores: regionalHrStores[regionalHrId] || [],
       allowedAMs: regionalHrAMs[regionalHrId] || [],
@@ -166,9 +173,12 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
 
   // Create HR Head roles
   hrHeads.forEach(hrHeadId => {
+    const hrPerson = HR_PERSONNEL.find(hr => hr.id === hrHeadId);
+    const hrName = hrPerson ? hrPerson.name : `HR Head ${hrHeadId}`;
+    
     mappings.push({
       userId: hrHeadId,
-      name: `HR Head ${hrHeadId}`,
+      name: hrName,
       role: 'hr_head',
       allowedStores: [], // Can see all stores
       allowedAMs: [], // Can see all AMs
@@ -178,9 +188,12 @@ const createRoleMappings = (hrMappingData: any[]): UserRole[] => {
 
   // Create LMS Head roles
   lmsHeads.forEach(lmsHeadId => {
+    const hrPerson = HR_PERSONNEL.find(hr => hr.id === lmsHeadId);
+    const hrName = hrPerson ? hrPerson.name : `LMS Head ${lmsHeadId}`;
+    
     mappings.push({
       userId: lmsHeadId,
-      name: `LMS Head ${lmsHeadId}`,
+      name: hrName,
       role: 'lms_head',
       allowedStores: [], // Can see all stores
       allowedAMs: [], // Can see all AMs
