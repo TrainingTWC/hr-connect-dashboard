@@ -72,7 +72,7 @@ export const HR_PERSONNEL: HRPerson[] = [
     { name: 'Manasi', id: 'H3603' },
     { name: 'Sunil', id: 'H3247' },
     { name: 'Sarit', id: 'H2081' },
-    { name: 'Pooja Kamerkar', id: 'HC002' },
+    { name: 'Pooja', id: 'HC002' },
     { name: 'Rohit Paul', id: 'H3551' },
     { name: 'Training Head', id: 'H3237' },
     { name: 'LMS Head', id: 'H541' }
