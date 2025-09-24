@@ -6,6 +6,7 @@ import { fetchSubmissions } from '../services/dataService';
 import { hapticFeedback } from '../utils/haptics';
 import StatCard from './StatCard';
 import Loader from './Loader';
+import NotificationOverlay from './NotificationOverlay';
 import ScoreDistributionChart from './ScoreDistributionChart';
 import AverageScoreByManagerChart from './AverageScoreByManagerChart';
 import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL, REGIONS } from '../constants';
@@ -37,6 +38,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
     am: '',
     hr: '',
   });
+
+  // Notification overlay state
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationType, setNotificationType] = useState<'success' | 'error' | 'info'>('success');
 
   // Auto-populate filters from URL parameters - but only when explicitly intended for dashboard filtering
   useEffect(() => {
@@ -284,6 +290,18 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
 
   const resetFilters = () => {
     setFilters({ region: '', store: '', am: '', hr: '' });
+  };
+
+  // Function to show notifications
+  const showNotificationMessage = (message: string, type: 'success' | 'error' | 'info' = 'success', duration: number = 2000) => {
+    setNotificationMessage(message);
+    setNotificationType(type);
+    setShowNotification(true);
+    
+    // Auto-hide notification after duration
+    setTimeout(() => {
+      setShowNotification(false);
+    }, duration);
   };
 
   const generatePDFReport = () => {
@@ -870,10 +888,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
       console.log('PDF generated successfully');
       // Ultra-strong success haptic for PDF completion (like premium apps)
       hapticFeedback.ultraStrong();
+      // Show success notification overlay
+      showNotificationMessage('Report Downloaded', 'success');
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF report. Please try again.');
       hapticFeedback.error();
+      // Show error notification overlay
+      showNotificationMessage('Error generating report', 'error');
     }
   };
 
@@ -981,6 +1003,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         </div>
       )}
 
+      {/* Notification Overlay */}
+      <NotificationOverlay
+        isVisible={showNotification}
+        message={notificationMessage}
+        type={notificationType}
+      />
     </div>
   );
 };
