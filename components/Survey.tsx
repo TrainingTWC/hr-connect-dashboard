@@ -1021,10 +1021,10 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
           
           {/* Score Bar */}
           <div className="mb-6">
-            <div className="text-lg font-bold text-slate-100 mb-3">
+            <div className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-3">
               Score: {score.total} / {score.max} ({score.percent}%)
             </div>
-            <div className="relative w-full h-6 bg-slate-700 rounded">
+            <div className="relative w-full h-6 bg-gray-200 dark:bg-slate-700 rounded">
               <div 
                 className="absolute left-0 top-0 h-full rounded transition-all duration-300"
                 style={{
@@ -1035,18 +1035,18 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
                 }}
               ></div>
               <div className="absolute right-2 top-0 h-full flex items-center">
-                <span className="text-sm font-bold text-slate-100">{score.percent}%</span>
+                <span className="text-sm font-bold text-white dark:text-slate-100">{score.percent}%</span>
               </div>
             </div>
           </div>
 
           {/* Answers Summary */}
           <div>
-            <h3 className="font-semibold text-slate-200 mb-3">Answers</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-slate-200 mb-3">Answers</h3>
             <ul className="list-disc ml-5 space-y-2">
               {QUESTIONS.map(q => (
-                <li key={q.id} className="text-slate-300">
-                  <strong className="text-slate-200">{q.title}</strong>: {responses[q.id] || '-'}
+                <li key={q.id} className="text-gray-700 dark:text-slate-300">
+                  <strong className="text-gray-900 dark:text-slate-200">{q.title}</strong>: {responses[q.id] || '-'}
                 </li>
               ))}
             </ul>
