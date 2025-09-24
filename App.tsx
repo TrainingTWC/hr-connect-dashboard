@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
 import Survey from './components/Survey';
+import AIInsights from './components/AIInsights';
 import Header from './components/Header';
 import Login from './components/Login';
 import { getUserRole, UserRole } from './roleMapping';
@@ -9,7 +10,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const AppContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'survey'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'survey' | 'ai-insights'>('dashboard');
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -87,7 +88,8 @@ const AppContent: React.FC = () => {
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'survey', label: 'Survey', icon: '📝' }
+    { id: 'survey', label: 'Survey', icon: '📝' },
+    { id: 'ai-insights', label: 'AI Insights', icon: '🤖' }
   ];
 
   return (
@@ -100,7 +102,7 @@ const AppContent: React.FC = () => {
           {tabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'dashboard' | 'survey')}
+              onClick={() => setActiveTab(tab.id as 'dashboard' | 'survey' | 'ai-insights')}
               className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                 activeTab === tab.id
                   ? 'border-sky-400 text-sky-400'
@@ -117,6 +119,7 @@ const AppContent: React.FC = () => {
       <main className="p-4 sm:p-6 lg:p-8">
         {activeTab === 'dashboard' && <Dashboard userRole={userRole} />}
         {activeTab === 'survey' && <Survey userRole={userRole} />}
+        {activeTab === 'ai-insights' && <AIInsights userRole={userRole} />}
       </main>
     </div>
   );
