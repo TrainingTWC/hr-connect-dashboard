@@ -184,10 +184,12 @@ const convertSheetsDataToSubmissions = async (sheetsData: any[]): Promise<Submis
 
     const calculatedPercent = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
     
-    // Use calculated scores if the ones from sheets are empty/invalid
+    // Always use recalculated scores since we updated the scoring system
+    // Use calculated scores if the ones from sheets are empty/invalid, otherwise use recalculated
     const finalTotalScore = row.totalScore && !isNaN(Number(row.totalScore)) ? Number(row.totalScore) : totalScore;
     const finalMaxScore = row.maxScore && !isNaN(Number(row.maxScore)) ? Number(row.maxScore) : maxScore;
-    const finalPercent = row.percent && !isNaN(Number(row.percent)) ? Number(row.percent) : calculatedPercent;
+    // Always use the recalculated percentage to ensure correct scoring after the update
+    const finalPercent = calculatedPercent;
 
     console.log(`Final scores - Total: ${finalTotalScore}, Max: ${finalMaxScore}, Percent: ${finalPercent}%`);
 
