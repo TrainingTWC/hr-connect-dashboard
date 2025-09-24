@@ -75,6 +75,11 @@ const SearchableFilter: React.FC<{
     <div>
       <label htmlFor={label} className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">
         {label}
+        {filteredOptions.length < options.length && !disabled && (
+          <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">
+            ({filteredOptions.length} of {options.length})
+          </span>
+        )}
       </label>
       <div className="relative">
         <input
@@ -230,24 +235,28 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           options={regions.map(r => ({ value: r, label: r }))}
         />
         
-        {/* Store - Searchable */}
-        <SearchableFilter
-          label="Store"
-          value={filters.store}
-          onChange={(value) => onFilterChange('store', value)}
-          placeholder="All Stores"
-          options={stores.map(s => ({ value: s.id, label: s.name, id: s.id }))}
-          disabled={stores.length === 0}
-        />
-        
-        {/* Area Manager - Searchable */}
+        {/* Area Manager - Searchable (filtered by HR) */}
         <SearchableFilter
           label="Area Manager"
           value={filters.am}
           onChange={(value) => onFilterChange('am', value)}
-          placeholder="All AMs"
+          placeholder={filters.hr ? "All AMs under selected HR" : "All AMs"}
           options={areaManagers.map(am => ({ value: am.id, label: am.name, id: am.id }))}
           disabled={areaManagers.length === 0}
+        />
+        
+        {/* Store - Searchable (filtered by AM or HR) */}
+        <SearchableFilter
+          label="Store"
+          value={filters.store}
+          onChange={(value) => onFilterChange('store', value)}
+          placeholder={
+            filters.am ? "All stores under selected AM" :
+            filters.hr ? "All stores under selected HR" :
+            "All Stores"
+          }
+          options={stores.map(s => ({ value: s.id, label: s.name, id: s.id }))}
+          disabled={stores.length === 0}
         />
         
         {/* HR Personnel - Searchable */}

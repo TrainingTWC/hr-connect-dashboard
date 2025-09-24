@@ -31,6 +31,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
   const [allStores, setAllStores] = useState<Store[]>([]);
   const [allAreaManagers, setAllAreaManagers] = useState<any[]>([]);
   const [allHRPersonnel, setAllHRPersonnel] = useState<any[]>([]);
+  const [hrMappingData, setHrMappingData] = useState<any[]>([]);
   
   const [filters, setFilters] = useState({
     region: '',
@@ -75,14 +76,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
       try {
   const base = (import.meta as any).env?.BASE_URL || '/';
   const response = await fetch(`${base}hr_mapping.json`);
-        const hrMappingData = await response.json();
+        const mappingData = await response.json();
+        setHrMappingData(mappingData);
         
         // Extract unique stores
         const storeMap = new Map();
         const amMap = new Map();
         const hrMap = new Map();
         
-        hrMappingData.forEach((item: any) => {
+        mappingData.forEach((item: any) => {
           // Stores
           if (!storeMap.has(item.storeId)) {
             storeMap.set(item.storeId, {
@@ -192,12 +194,62 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
     // Filter by user role permissions
     stores = stores.filter(store => canAccessStore(userRole, store.id));
     
+    // If Area Manager is selected, filter stores based on AM mapping
+    if (filters.am && hrMappingData.length > 0) {
+      console.log('Filtering Stores for Area Manager:', filters.am);
+      
+      // Get stores that belong to this Area Manager
+      const amStoreIds = hrMappingData
+        .filter((mapping: any) => mapping.areaManagerId === filters.am)
+        .map((mapping: any) => mapping.storeId);
+      
+      stores = stores.filter(store => amStoreIds.includes(store.id));
+      console.log(`Found ${stores.length} stores for AM ${filters.am}:`, stores);
+    }
+    // If HR is selected but no AM, show stores under that HR
+    else if (filters.hr && hrMappingData.length > 0) {
+      console.log('Filtering Stores for HR:', filters.hr);
+      
+      // Get stores where this HR is responsible (HRBP > Regional HR > HR Head priority)
+      const hrStoreIds = hrMappingData
+        .filter((mapping: any) => 
+          mapping.hrbpId === filters.hr || 
+          mapping.regionalHrId === filters.hr || 
+          mapping.hrHeadId === filters.hr
+        )
+        .map((mapping: any) => mapping.storeId);
+      
+      stores = stores.filter(store => hrStoreIds.includes(store.id));
+      console.log(`Found ${stores.length} stores for HR ${filters.hr}:`, stores);
+    }
+    
     return stores;
-  }, [filters.region, userRole, allStores]);
+  }, [filters.region, filters.am, filters.hr, userRole, allStores, hrMappingData]);
 
   const availableAreaManagers = useMemo(() => {
-    return allAreaManagers.filter(am => canAccessAM(userRole, am.id));
-  }, [userRole, allAreaManagers]);
+    let areaManagers = allAreaManagers.filter(am => canAccessAM(userRole, am.id));
+    
+    // If HR is selected, filter AMs based on HR mapping
+    if (filters.hr && hrMappingData.length > 0) {
+      console.log('Filtering Area Managers for HR:', filters.hr);
+      
+      // Get unique Area Manager IDs that work under this HR
+      const hrAreaManagerIds = new Set<string>();
+      
+      hrMappingData.forEach((mapping: any) => {
+        if (mapping.hrbpId === filters.hr || 
+            mapping.regionalHrId === filters.hr || 
+            mapping.hrHeadId === filters.hr) {
+          hrAreaManagerIds.add(mapping.areaManagerId);
+        }
+      });
+      
+      areaManagers = areaManagers.filter(am => hrAreaManagerIds.has(am.id));
+      console.log(`Found ${areaManagers.length} Area Managers for HR ${filters.hr}:`, areaManagers);
+    }
+    
+    return areaManagers;
+  }, [userRole, allAreaManagers, filters.hr, hrMappingData]);
 
   const availableHRPersonnel = useMemo(() => {
     return allHRPersonnel.filter(hr => canAccessHR(userRole, hr.id));
@@ -282,9 +334,17 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
 
   const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
     const newFilters = { ...filters, [filterName]: value };
+    
+    // Cascading reset logic for hierarchical filters
     if (filterName === 'region') {
       newFilters.store = ''; // Reset store when region changes
+    } else if (filterName === 'hr') {
+      newFilters.am = '';    // Reset AM when HR changes
+      newFilters.store = ''; // Reset store when HR changes
+    } else if (filterName === 'am') {
+      newFilters.store = ''; // Reset store when AM changes
     }
+    
     setFilters(newFilters);
   };
 
