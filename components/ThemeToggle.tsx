@@ -28,7 +28,7 @@ const ThemeToggle: React.FC = () => {
         src={theme === 'dark' ? darkIconUrl : lightIconUrl}
         alt=""
         aria-hidden="true"
-        className="w-6 h-6 transition-opacity duration-200"
+        className="w-8 h-8 transition-opacity duration-200"
       />
     </button>
   );
