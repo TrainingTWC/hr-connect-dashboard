@@ -30,7 +30,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-sky-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         {/* Logo/Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 mt-8">
           <div className="inline-flex items-center justify-center mb-6">
             <img 
               src={`${(import.meta as any).env?.BASE_URL || '/'}assets/logo.png`}
