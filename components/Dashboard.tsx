@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Submission, Store } from '../types';
 import { fetchSubmissions } from '../services/dataService';
+import { triggerHapticFeedback } from '../utils/haptics';
 import StatCard from './StatCard';
 import Loader from './Loader';
 import ScoreDistributionChart from './ScoreDistributionChart';
@@ -288,9 +289,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
   const generatePDFReport = () => {
     try {
       console.log('Starting PDF generation...');
+      triggerHapticFeedback('medium');
       
       if (!filteredSubmissions || filteredSubmissions.length === 0) {
         alert('No data available to generate report');
+        triggerHapticFeedback('error');
         return;
       }
 
@@ -864,9 +867,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         doc.save(`${filename}_${Date.now()}.pdf`);
       }
       console.log('PDF generated successfully');
+      triggerHapticFeedback('success');
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF report. Please try again.');
+      triggerHapticFeedback('error');
     }
   };
 

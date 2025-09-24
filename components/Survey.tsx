@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { QUESTIONS, AREA_MANAGERS, HR_PERSONNEL } from '../constants';
 import { Question, Choice, Store } from '../types';
 import { UserRole, canAccessStore, canAccessAM, canAccessHR } from '../roleMapping';
+import { triggerHapticFeedback } from '../utils/haptics';
+import LoadingOverlay from './LoadingOverlay';
 import hrMappingData from '../src/hr_mapping.json';
 
 // Google Sheets endpoint for logging data
@@ -78,6 +80,7 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [allStores, setAllStores] = useState<Store[]>([]);
   const [filteredStoresByHR, setFilteredStoresByHR] = useState<Store[]>([]);
 
@@ -300,6 +303,9 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
   };
 
   const handleChange = (id: string, value: string) => {
+    // Trigger haptic feedback for survey responses
+    triggerHapticFeedback('light');
+    
     setResponses(prev => {
       const next = {...prev, [id]: value};
       try { 
@@ -366,14 +372,26 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
       const el = document.querySelector(`[name="${validation.missing}"]`);
       if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
       alert('Please answer all required questions.');
+      triggerHapticFeedback('error');
       return;
     }
     
-    // Log data to Google Sheets
-    await logDataToGoogleSheets();
+    setIsLoading(true);
     
-    alert('Survey submitted successfully!');
-    setSubmitted(true);
+    try {
+      // Log data to Google Sheets
+      await logDataToGoogleSheets();
+      
+      alert('Survey submitted successfully!');
+      triggerHapticFeedback('success');
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('Error submitting survey. Please try again.');
+      triggerHapticFeedback('error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logDataToGoogleSheets = async () => {
@@ -726,6 +744,9 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
           </div>
         </div>
       )}
+      
+      {/* Loading Overlay */}
+      <LoadingOverlay isVisible={isLoading} message="Submitting survey..." />
     </div>
   );
 };
