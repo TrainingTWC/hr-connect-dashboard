@@ -31,12 +31,70 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-sky-400 rounded-full mb-4">
-            <span className="text-2xl text-white">📊</span>
+          <div className="inline-flex items-center justify-center mb-6">
+            <svg 
+              width="120" 
+              height="120" 
+              viewBox="0 0 800 600" 
+              className="drop-shadow-lg"
+            >
+              {/* Coffee cup with wave design */}
+              <g transform="translate(400,300)">
+                {/* Cup handle */}
+                <path 
+                  d="M 120 -60 Q 170 -60 170 -20 Q 170 20 120 20" 
+                  fill="none" 
+                  stroke="#2D3748" 
+                  strokeWidth="12" 
+                  className="dark:stroke-slate-300"
+                />
+                
+                {/* Cup body */}
+                <ellipse 
+                  cx="0" 
+                  cy="0" 
+                  rx="110" 
+                  ry="80" 
+                  fill="none" 
+                  stroke="#2D3748" 
+                  strokeWidth="12" 
+                  className="dark:stroke-slate-300"
+                />
+                
+                {/* Inner cup area */}
+                <ellipse 
+                  cx="0" 
+                  cy="0" 
+                  rx="95" 
+                  ry="65" 
+                  fill="#2D3748" 
+                  className="dark:fill-slate-300"
+                />
+                
+                {/* Coffee waves */}
+                <path 
+                  d="M -80 -20 Q -40 -40 0 -20 Q 40 0 80 -20" 
+                  fill="none" 
+                  stroke="white" 
+                  strokeWidth="4" 
+                  className="dark:stroke-slate-800"
+                />
+                <path 
+                  d="M -70 10 Q -30 -10 10 10 Q 50 30 90 10" 
+                  fill="none" 
+                  stroke="white" 
+                  strokeWidth="4" 
+                  className="dark:stroke-slate-800"
+                />
+              </g>
+            </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
-            HR Connect Dashboard
+            Third Wave Coffee
           </h1>
+          <h2 className="text-2xl font-semibold text-sky-500 dark:text-sky-400 mb-4">
+            HR Connect Dashboard
+          </h2>
           <p className="text-gray-600 dark:text-slate-400">
             Please enter your password to continue
           </p>
