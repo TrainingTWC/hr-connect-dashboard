@@ -448,9 +448,10 @@ const Survey: React.FC<SurveyProps> = ({ userRole }) => {
 
   const handleReset = () => {
     localStorage.removeItem('hr_resp');
+    // Preserve HR name and ID when resetting the form
     const newMeta = {
-      hrName: '',
-      hrId: '',
+      hrName: meta.hrName, // Keep existing HR name
+      hrId: meta.hrId,     // Keep existing HR ID
       amName: '', amId: '', empName: '', empId: '', storeName: '', storeId: ''
     };
     try { 
