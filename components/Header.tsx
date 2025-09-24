@@ -15,7 +15,9 @@ const Header: React.FC = () => {
             HR Connect
           </h2>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center justify-center">
+          <ThemeToggle />
+        </div>
       </div>
       <p className="mt-1 text-gray-500 dark:text-slate-400 text-sm">Employee data, insights, and task management.</p>
     </header>
