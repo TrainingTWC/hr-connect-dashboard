@@ -1,17 +1,18 @@
 import React from 'react';
 
 interface QuickActionsProps {
-  actions: Array<{
+  insights?: Array<{
     id: string;
     title: string;
     description: string;
-    priority: 'high' | 'medium' | 'low';
-    estimatedImpact: string;
-    timeToComplete: string;
+    type: string;
+    impact: string;
+    category: string;
   }>;
 }
 
-const QuickActions: React.FC<QuickActionsProps> = ({ actions }) => {
+const QuickActions: React.FC<QuickActionsProps> = ({ insights = [] }) => {
+  const safeInsights = Array.isArray(insights) ? insights : [];
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-500 hover:bg-red-600';
@@ -22,7 +23,14 @@ const QuickActions: React.FC<QuickActionsProps> = ({ actions }) => {
   };
 
   // Mock actions if empty
-  const mockActions = actions.length > 0 ? actions : [
+  const mockActions = safeInsights.length > 0 ? safeInsights.map(insight => ({
+    id: insight.id,
+    title: `Address ${insight.title}`,
+    description: insight.description,
+    priority: insight.type === 'urgent' ? 'high' : insight.type === 'critical' ? 'high' : 'medium',
+    estimatedImpact: insight.impact || 'Medium',
+    timeToComplete: insight.type === 'urgent' ? '3 days' : '1 week'
+  })) : [
     {
       id: '1',
       title: 'Schedule Manager Training',

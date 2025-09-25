@@ -1,17 +1,23 @@
 import React from 'react';
 
 interface ProblemBreakdownProps {
-  problems: Array<{
+  data?: Array<{
     category: string;
-    count: number;
-    percentage: number;
+    value: number;
     color: string;
   }>;
 }
 
-const ProblemBreakdown: React.FC<ProblemBreakdownProps> = ({ problems }) => {
+const ProblemBreakdown: React.FC<ProblemBreakdownProps> = ({ data = [] }) => {
+  const safeData = Array.isArray(data) ? data : [];
+  
   // Mock data if empty
-  const mockProblems = problems.length > 0 ? problems : [
+  const mockProblems = safeData.length > 0 ? safeData.map(item => ({
+    category: item.category,
+    count: item.value,
+    percentage: item.value,
+    color: item.color
+  })) : [
     { category: 'Work Pressure', count: 15, percentage: 35, color: '#ef4444' },
     { category: 'System Issues', count: 12, percentage: 28, color: '#f97316' },
     { category: 'Training Gaps', count: 10, percentage: 23, color: '#eab308' },

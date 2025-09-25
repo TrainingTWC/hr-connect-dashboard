@@ -12,9 +12,11 @@ interface RecommendationsPanelProps {
   }>;
 }
 
-const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({ recommendations }) => {
+const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({ recommendations = [] }) => {
+  const safeRecommendations = Array.isArray(recommendations) ? recommendations : [];
+  
   // Mock data if empty
-  const mockRecommendations = recommendations.length > 0 ? recommendations : [
+  const mockRecommendations = safeRecommendations.length > 0 ? safeRecommendations : [
     {
       id: '1',
       title: 'Implement Daily Stand-ups',

@@ -1,20 +1,22 @@
 import React from 'react';
 
 interface AIOverviewHeroProps {
-  totalInsights: number;
-  highPriority: number;
-  mediumPriority: number;
-  responsesAnalyzed: number;
-  isAnalyzing: boolean;
+  data?: {
+    totalResponses: number;
+    avgSatisfaction: number;
+    criticalIssues: number;
+    improvementAreas: number;
+  };
 }
 
-const AIOverviewHero: React.FC<AIOverviewHeroProps> = ({
-  totalInsights,
-  highPriority,
-  mediumPriority,
-  responsesAnalyzed,
-  isAnalyzing
-}) => {
+const AIOverviewHero: React.FC<AIOverviewHeroProps> = ({ data }) => {
+  const safeData = data || {
+    totalResponses: 0,
+    avgSatisfaction: 0,
+    criticalIssues: 0,
+    improvementAreas: 0
+  };
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 rounded-2xl p-8 text-white shadow-2xl">
       {/* Background Pattern */}
@@ -31,38 +33,30 @@ const AIOverviewHero: React.FC<AIOverviewHeroProps> = ({
             <p className="text-blue-100 text-lg">Intelligent analysis of your HR data</p>
           </div>
           <div className="flex items-center space-x-2">
-            {isAnalyzing && (
-              <>
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                <span className="text-blue-100">Analyzing...</span>
-              </>
-            )}
-            {!isAnalyzing && (
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-200">Analysis Complete</span>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-200">Analysis Complete</span>
+            </div>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-            <div className="text-3xl font-bold text-white">{totalInsights}</div>
-            <div className="text-blue-100 text-sm">Total Insights</div>
+            <div className="text-3xl font-bold text-white">{safeData.totalResponses}</div>
+            <div className="text-blue-100 text-sm">Total Responses</div>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-            <div className="text-3xl font-bold text-red-300">{highPriority}</div>
-            <div className="text-blue-100 text-sm">High Priority</div>
+            <div className="text-3xl font-bold text-red-300">{safeData.criticalIssues}</div>
+            <div className="text-blue-100 text-sm">Critical Issues</div>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-            <div className="text-3xl font-bold text-yellow-300">{mediumPriority}</div>
-            <div className="text-blue-100 text-sm">Medium Priority</div>
+            <div className="text-3xl font-bold text-yellow-300">{safeData.improvementAreas}</div>
+            <div className="text-blue-100 text-sm">Improvement Areas</div>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-            <div className="text-3xl font-bold text-white">{responsesAnalyzed}</div>
-            <div className="text-blue-100 text-sm">Responses</div>
+            <div className="text-3xl font-bold text-white">{Math.round(safeData.avgSatisfaction)}%</div>
+            <div className="text-blue-100 text-sm">Avg Satisfaction</div>
           </div>
         </div>
       </div>

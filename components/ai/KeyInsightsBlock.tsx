@@ -11,8 +11,9 @@ interface KeyInsightsBlockProps {
   }>;
 }
 
-const KeyInsightsBlock: React.FC<KeyInsightsBlockProps> = ({ insights }) => {
-  const topInsights = insights.slice(0, 3);
+const KeyInsightsBlock: React.FC<KeyInsightsBlockProps> = ({ insights = [] }) => {
+  const safeInsights = Array.isArray(insights) ? insights : [];
+  const topInsights = safeInsights.slice(0, 3);
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {

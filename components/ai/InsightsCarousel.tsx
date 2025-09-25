@@ -14,11 +14,12 @@ interface InsightsCarouselProps {
   }>;
 }
 
-const InsightsCarousel: React.FC<InsightsCarouselProps> = ({ insights }) => {
+const InsightsCarousel: React.FC<InsightsCarouselProps> = ({ insights = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const safeInsights = Array.isArray(insights) ? insights : [];
   
   // Mock data if empty
-  const mockInsights = insights.length > 0 ? insights : [
+  const mockInsights = safeInsights.length > 0 ? safeInsights : [
     {
       id: '1',
       title: 'Communication Gap Alert',

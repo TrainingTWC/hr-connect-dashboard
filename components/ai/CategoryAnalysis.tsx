@@ -1,18 +1,24 @@
 import React from 'react';
 
 interface CategoryAnalysisProps {
-  categories: Array<{
+  data?: Array<{
     name: string;
     score: number;
-    maxScore: number;
     trend: 'up' | 'down' | 'stable';
-    issues: number;
   }>;
 }
 
-const CategoryAnalysis: React.FC<CategoryAnalysisProps> = ({ categories }) => {
+const CategoryAnalysis: React.FC<CategoryAnalysisProps> = ({ data = [] }) => {
+  const safeData = Array.isArray(data) ? data : [];
+  
   // Mock data if empty
-  const mockCategories = categories.length > 0 ? categories : [
+  const mockCategories = safeData.length > 0 ? safeData.map(item => ({
+    name: item.name,
+    score: item.score,
+    maxScore: 100,
+    trend: item.trend,
+    issues: Math.floor(Math.random() * 10) + 1
+  })) : [
     { name: 'Operational', score: 65, maxScore: 100, trend: 'down' as const, issues: 8 },
     { name: 'HR Process', score: 78, maxScore: 100, trend: 'up' as const, issues: 3 },
     { name: 'Training', score: 45, maxScore: 100, trend: 'down' as const, issues: 12 },

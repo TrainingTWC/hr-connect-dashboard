@@ -22,6 +22,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Utility functions
   const calculateVariance = (scores: number[], mean: number) => {
@@ -61,6 +62,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
       
       console.log('AIInsights: Setting responses with', data.length, 'items');
       setResponses(data);
+      setDataLoaded(true);
       generateInsights(data);
     } catch (err) {
       console.error('AIInsights: Error fetching submissions:', err);
@@ -346,16 +348,19 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
     };
   };
 
-  // Prepare data for components
+  // Prepare data for components with strict safety checks
+  const safeResponses = Array.isArray(responses) ? responses : [];
+  const safeInsights = Array.isArray(insights) ? insights : [];
+
   const overviewData = {
-    totalResponses: responses?.length || 0,
-    avgSatisfaction: responses?.length > 0 ? 
-      responses.reduce((sum, r) => sum + (r.percent || 0), 0) / responses.length : 0,
-    criticalIssues: insights?.filter(i => i.type === 'critical' || i.type === 'urgent')?.length || 0,
-    improvementAreas: insights?.filter(i => i.type === 'improvement')?.length || 0
+    totalResponses: safeResponses.length,
+    avgSatisfaction: safeResponses.length > 0 ? 
+      safeResponses.reduce((sum, r) => sum + (r.percent || 0), 0) / safeResponses.length : 0,
+    criticalIssues: safeInsights.filter(i => i && (i.type === 'critical' || i.type === 'urgent')).length,
+    improvementAreas: safeInsights.filter(i => i && i.type === 'improvement').length
   };
 
-  const problemData = responses?.length > 0 ? [
+  const problemData = safeResponses.length > 0 ? [
     { category: 'Communication', value: Math.round(Math.random() * 30 + 20), color: '#ef4444' },
     { category: 'Systems', value: Math.round(Math.random() * 25 + 15), color: '#f97316' },
     { category: 'Training', value: Math.round(Math.random() * 20 + 10), color: '#eab308' },
@@ -363,14 +368,14 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
     { category: 'Other', value: Math.round(Math.random() * 10 + 5), color: '#6b7280' }
   ] : [];
 
-  const categoryData = responses?.length > 0 ? [
+  const categoryData = safeResponses.length > 0 ? [
     { name: 'Communication', score: Math.random() * 40 + 60, trend: Math.random() > 0.5 ? 'up' : 'down' },
     { name: 'Operations', score: Math.random() * 40 + 50, trend: Math.random() > 0.5 ? 'up' : 'down' },
     { name: 'Training', score: Math.random() * 40 + 55, trend: Math.random() > 0.5 ? 'up' : 'stable' },
     { name: 'Satisfaction', score: Math.random() * 30 + 70, trend: 'up' }
   ] : [];
 
-  const recommendations = insights?.length > 0 ? insights.map(insight => ({
+  const recommendations = safeInsights.length > 0 ? safeInsights.map(insight => ({
     id: insight.id,
     title: insight.title,
     description: insight.recommendation,
@@ -380,7 +385,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
     category: insight.category || 'operational'
   })) : [];
 
-  if (loading) {
+  if (loading || !dataLoaded) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="text-center">
@@ -412,7 +417,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
     );
   }
 
-  if (responses.length === 0) {
+  if (responses.length === 0 && dataLoaded) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="text-center p-12 bg-gray-50 dark:bg-slate-800 rounded-xl">
@@ -449,17 +454,17 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
 
         {/* Insights Carousel - Large width */}
         <div className="lg:col-span-8">
-          <InsightsCarousel insights={insights} />
+          <InsightsCarousel insights={safeInsights} />
         </div>
 
         {/* Key Insights Block - Smaller width */}
         <div className="lg:col-span-4">
-          <KeyInsightsBlock insights={insights.slice(0, 3)} />
+          <KeyInsightsBlock insights={safeInsights.slice(0, 3)} />
         </div>
 
         {/* Priority Heatmap - Medium width */}
         <div className="lg:col-span-5">
-          <PriorityHeatmap data={responses} />
+          <PriorityHeatmap data={safeResponses} />
         </div>
 
         {/* Problem Breakdown - Medium width */}
@@ -469,7 +474,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
 
         {/* Quick Actions - Small width */}
         <div className="lg:col-span-3">
-          <QuickActions insights={insights} />
+          <QuickActions insights={safeInsights} />
         </div>
 
         {/* Category Analysis - Large width */}
@@ -479,7 +484,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
 
         {/* Trend Analysis - Medium width */}
         <div className="lg:col-span-5">
-          <TrendAnalysis data={responses} />
+          <TrendAnalysis data={safeResponses} />
         </div>
 
         {/* Recommendations Panel - Full width */}
