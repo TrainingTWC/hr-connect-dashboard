@@ -23,18 +23,52 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
+  // Utility functions
+  const calculateVariance = (scores: number[], mean: number) => {
+    if (!scores || scores.length === 0) return 0;
+    return Math.sqrt(scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length);
+  };
+
+  const getQuestionText = (questionId: string) => {
+    const question = QUESTIONS.find(q => q.id === questionId);
+    return question?.title || questionId;
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await fetchSubmissions();
-        setResponses(data);
-        generateInsights(data);
-      } catch (err) {
-        console.error('Error fetching submissions for AI Insights:', err);
-        setError('Failed to load data for AI analysis');
-        setLoading(false);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      console.log('AIInsights: Loading submissions data...');
+      const data = await fetchSubmissions();
+      console.log('AIInsights: Received data:', data);
+      
+      // Extra safety check
+      if (!data) {
+        console.warn('AIInsights: Data is null/undefined, using empty array');
+        setResponses([]);
+        generateInsights([]);
+        return;
       }
-    };
+      
+      if (!Array.isArray(data)) {
+        console.warn('AIInsights: Data is not an array:', typeof data, data);
+        setResponses([]);
+        generateInsights([]);
+        return;
+      }
+      
+      console.log('AIInsights: Setting responses with', data.length, 'items');
+      setResponses(data);
+      generateInsights(data);
+    } catch (err) {
+      console.error('AIInsights: Error fetching submissions:', err);
+      setError('Failed to load data for AI analysis');
+      setResponses([]);
+      setLoading(false);
+    }
+  };
 
     loadData();
   }, [userRole]);
@@ -64,91 +98,107 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
   };
 
   const performAIAnalysis = (data: Submission[]) => {
-    if (!data || data.length === 0) {
+    console.log('AIInsights: performAIAnalysis called with data:', data);
+    
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log('AIInsights: No data for analysis, returning empty insights');
       return [];
     }
 
+    console.log('AIInsights: Processing', data.length, 'submissions for analysis');
     const insights = [];
 
-    // Insight 1: Communication Gap Analysis
-    const feedbackGap = analyzeFeedbackGap(data);
-    if (feedbackGap.significant) {
-      insights.push({
-        id: 'feedback-gap',
-        type: 'critical',
-        title: 'Communication Gap Detected',
-        description: feedbackGap.description,
-        impact: 'high',
-        recommendation: feedbackGap.recommendation,
-        confidence: feedbackGap.confidence,
-        metric: 'Feedback Gap',
-        value: `${feedbackGap.variance?.toFixed(1)} points`,
-        trend: 'down' as const,
-        category: 'communication',
-        actionable: true,
-        context: 'This suggests managers think they provide feedback more often than employees perceive'
-      });
+    try {
+      // Insight 1: Communication Gap Analysis
+      console.log('AIInsights: Analyzing feedback gap...');
+      const feedbackGap = analyzeFeedbackGap(data);
+      if (feedbackGap && feedbackGap.significant) {
+        insights.push({
+          id: 'feedback-gap',
+          type: 'critical',
+          title: 'Communication Gap Detected',
+          description: feedbackGap.description,
+          impact: 'high',
+          recommendation: feedbackGap.recommendation,
+          confidence: feedbackGap.confidence,
+          metric: 'Feedback Gap',
+          value: `${feedbackGap.variance?.toFixed(1)} points`,
+          trend: 'down' as const,
+          category: 'communication',
+          actionable: true,
+          context: 'This suggests managers think they provide feedback more often than employees perceive'
+        });
+      }
+
+      // Insight 2: System Reliability Issues
+      console.log('AIInsights: Analyzing system reliability...');
+      const systemIssues = analyzeSystemReliability(data);
+      if (systemIssues && systemIssues.critical) {
+        insights.push({
+          id: 'system-reliability',
+          type: 'urgent',
+          title: 'System Reliability Crisis',
+          description: systemIssues.description,
+          impact: 'critical',
+          recommendation: systemIssues.recommendation,
+          confidence: systemIssues.confidence,
+          metric: 'System Reliability',
+          value: `${((5 - systemIssues.avgScore) * 20).toFixed(0)}%`,
+          trend: 'down' as const,
+          category: 'operational',
+          actionable: true,
+          context: 'Multiple apps failing simultaneously indicates infrastructure issues'
+        });
+      }
+
+      // Insight 3: Training Effectiveness
+      console.log('AIInsights: Analyzing training effectiveness...');
+      const trainingAnalysis = analyzeTrainingEffectiveness(data);
+      if (trainingAnalysis && trainingAnalysis.needsAttention) {
+        insights.push({
+          id: 'training-effectiveness',
+          type: 'improvement',
+          title: 'Training Program Optimization',
+          description: trainingAnalysis.description,
+          impact: 'medium',
+          recommendation: trainingAnalysis.recommendation,
+          confidence: trainingAnalysis.confidence,
+          metric: 'Training Variance',
+          value: `${(trainingAnalysis.variance * 20).toFixed(0)}%`,
+          trend: 'stable' as const,
+          category: 'training',
+          actionable: true,
+          context: 'Some departments complete training significantly faster than others'
+        });
+      }
+
+      // Insight 4: Satisfaction Drivers
+      console.log('AIInsights: Analyzing satisfaction drivers...');
+      const satisfactionDrivers = analyzeSatisfactionDrivers(data);
+      if (satisfactionDrivers) {
+        insights.push({
+          id: 'satisfaction-drivers',
+          type: 'positive',
+          title: 'Key Satisfaction Drivers Identified',
+          description: satisfactionDrivers.description,
+          impact: 'high',
+          recommendation: satisfactionDrivers.recommendation,
+          confidence: satisfactionDrivers.confidence,
+          metric: 'Satisfaction Impact',
+          value: `+${Math.round(satisfactionDrivers.topScore * 20)}%`,
+          trend: 'up' as const,
+          category: 'satisfaction',
+          actionable: true,
+          context: 'Strong correlation between this factor and overall satisfaction'
+        });
+      }
+
+      console.log('AIInsights: Generated', insights.length, 'insights');
+      return insights;
+    } catch (error) {
+      console.error('AIInsights: Error in performAIAnalysis:', error);
+      return [];
     }
-
-    // Insight 2: System Reliability Issues
-    const systemIssues = analyzeSystemReliability(data);
-    if (systemIssues.critical) {
-      insights.push({
-        id: 'system-reliability',
-        type: 'urgent',
-        title: 'System Reliability Crisis',
-        description: systemIssues.description,
-        impact: 'critical',
-        recommendation: systemIssues.recommendation,
-        confidence: systemIssues.confidence,
-        metric: 'System Reliability',
-        value: `${((5 - systemIssues.avgScore) * 20).toFixed(0)}%`,
-        trend: 'down' as const,
-        category: 'operational',
-        actionable: true,
-        context: 'Multiple apps failing simultaneously indicates infrastructure issues'
-      });
-    }
-
-    // Insight 3: Training Effectiveness
-    const trainingAnalysis = analyzeTrainingEffectiveness(data);
-    if (trainingAnalysis.needsAttention) {
-      insights.push({
-        id: 'training-effectiveness',
-        type: 'improvement',
-        title: 'Training Program Optimization',
-        description: trainingAnalysis.description,
-        impact: 'medium',
-        recommendation: trainingAnalysis.recommendation,
-        confidence: trainingAnalysis.confidence,
-        metric: 'Training Variance',
-        value: `${(trainingAnalysis.variance * 20).toFixed(0)}%`,
-        trend: 'stable' as const,
-        category: 'training',
-        actionable: true,
-        context: 'Some departments complete training significantly faster than others'
-      });
-    }
-
-    // Insight 4: Satisfaction Drivers
-    const satisfactionDrivers = analyzeSatisfactionDrivers(data);
-    insights.push({
-      id: 'satisfaction-drivers',
-      type: 'positive',
-      title: 'Key Satisfaction Drivers Identified',
-      description: satisfactionDrivers.description,
-      impact: 'high',
-      recommendation: satisfactionDrivers.recommendation,
-      confidence: satisfactionDrivers.confidence,
-      metric: 'Satisfaction Impact',
-      value: `+${Math.round(satisfactionDrivers.topScore * 20)}%`,
-      trend: 'up' as const,
-      category: 'satisfaction',
-      actionable: true,
-      context: 'Strong correlation between this factor and overall satisfaction'
-    });
-
-    return insights;
   };
 
   const analyzeFeedbackGap = (data: Submission[]) => {
@@ -227,26 +277,44 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
   };
 
   const analyzeTrainingEffectiveness = (data: Submission[]) => {
-    // Analyze q8 (training completion) patterns
-    const trainingScores = data.map(s => {
-      const q8Value = (s as any).q8;
-      if (q8Value === 'Every time') return 5;
-      if (q8Value === 'Most of the time') return 4;
-      if (q8Value === 'Sometime') return 3;
-      if (q8Value === 'At Time') return 2;
-      if (q8Value === 'Never') return 1;
-      return 0;
-    }).filter(score => score > 0);
-    const avgTraining = trainingScores.reduce((sum, score) => sum + score, 0) / trainingScores.length;
-    const variance = calculateVariance(trainingScores, avgTraining);
+    // Add safety check
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log('AIInsights: analyzeTrainingEffectiveness - No data available');
+      return { needsAttention: false, variance: 0, description: 'No data available', recommendation: 'Collect more survey data', confidence: 0 };
+    }
 
-    return {
-      needsAttention: variance > 1.0 || avgTraining < 3.5,
-      variance,
-      description: `Training effectiveness analysis reveals ${variance.toFixed(1)} variance in completion rates with average score ${avgTraining.toFixed(1)}/5. High variance suggests inconsistent training delivery across departments.`,
-      recommendation: 'Standardize training programs and implement peer mentoring system for consistent results.',
-      confidence: Math.round(variance * 25 + 65)
-    };
+    try {
+      // Analyze q8 (training completion) patterns
+      const trainingScores = data.map(s => {
+        if (!s || typeof s !== 'object') return 0;
+        const q8Value = (s as any).q8;
+        if (q8Value === 'Every time') return 5;
+        if (q8Value === 'Most of the time') return 4;
+        if (q8Value === 'Sometime') return 3;
+        if (q8Value === 'At Time') return 2;
+        if (q8Value === 'Never') return 1;
+        return 0;
+      }).filter(score => score > 0);
+      
+      if (trainingScores.length === 0) {
+        console.log('AIInsights: analyzeTrainingEffectiveness - No valid training scores');
+        return { needsAttention: false, variance: 0, description: 'No training data available', recommendation: 'Collect training responses', confidence: 0 };
+      }
+      
+      const avgTraining = trainingScores.reduce((sum, score) => sum + score, 0) / trainingScores.length;
+      const variance = calculateVariance(trainingScores, avgTraining);
+
+      return {
+        needsAttention: variance > 1.0 || avgTraining < 3.5,
+        variance,
+        description: `Training effectiveness analysis reveals ${variance.toFixed(1)} variance in completion rates with average score ${avgTraining.toFixed(1)}/5. High variance suggests inconsistent training delivery across departments.`,
+        recommendation: 'Standardize training programs and implement peer mentoring system for consistent results.',
+        confidence: Math.round(variance * 25 + 65)
+      };
+    } catch (error) {
+      console.error('AIInsights: Error in analyzeTrainingEffectiveness:', error);
+      return { needsAttention: false, variance: 0, description: 'Error analyzing training data', recommendation: 'Check data format', confidence: 0 };
+    }
   };
 
   const analyzeSatisfactionDrivers = (data: Submission[]) => {
@@ -276,15 +344,6 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
       recommendation: `Focus improvement initiatives on ${getQuestionText(topDriver.question).toLowerCase()} to maximize satisfaction impact.`,
       confidence: 85
     };
-  };
-
-  const calculateVariance = (scores: number[], mean: number) => {
-    return Math.sqrt(scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length);
-  };
-
-  const getQuestionText = (questionId: string) => {
-    const question = QUESTIONS.find(q => q.id === questionId);
-    return question?.title || questionId;
   };
 
   // Prepare data for components
