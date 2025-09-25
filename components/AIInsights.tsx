@@ -42,12 +42,25 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
   const generateInsights = async (data: Submission[]) => {
     setLoading(true);
     
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Simulate AI processing delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const generatedInsights = performAIAnalysis(data);
-    setInsights(generatedInsights);
-    setLoading(false);
+      // Add safety check for data
+      if (!data || data.length === 0) {
+        setInsights([]);
+        setLoading(false);
+        return;
+      }
+
+      const generatedInsights = performAIAnalysis(data);
+      setInsights(generatedInsights);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error generating insights:', err);
+      setError('Failed to generate AI insights');
+      setLoading(false);
+    }
   };
 
   const performAIAnalysis = (data: Submission[]) => {
@@ -139,6 +152,11 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
   };
 
   const analyzeFeedbackGap = (data: Submission[]) => {
+    // Add safety check
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return { significant: false, variance: 0, avgScore: 0, description: 'No data available', recommendation: 'Collect more survey data', confidence: 0 };
+    }
+
     // Analyze q2 (receiving feedback) patterns - using submission structure
     const q2Responses = data.map(s => {
       const q2Value = (s as any).q2;
@@ -149,6 +167,10 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
       if (q2Value === 'Never') return 1;
       return 0;
     }).filter(score => score > 0);
+    
+    if (q2Responses.length === 0) {
+      return { significant: false, variance: 0, avgScore: 0, description: 'No feedback data available', recommendation: 'Collect feedback responses', confidence: 0 };
+    }
     
     const avgScore = q2Responses.reduce((sum, score) => sum + score, 0) / q2Responses.length;
     const variance = calculateVariance(q2Responses, avgScore);
@@ -164,6 +186,11 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
   };
 
   const analyzeSystemReliability = (data: Submission[]) => {
+    // Add safety check
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return { critical: false, avgScore: 0, description: 'No data available', recommendation: 'Collect more survey data', confidence: 0 };
+    }
+
     // Analyze q1 (work pressure) which often correlates with system issues
     const q1Responses = data.map(s => {
       const q1Value = (s as any).q1;
@@ -174,7 +201,8 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
       if (q1Value === 'Never') return 5;
       return 0;
     }).filter(score => score > 0);
-    const avgPressure = q1Responses.reduce((sum, score) => sum + score, 0) / q1Responses.length;
+    
+    const avgPressure = q1Responses.length > 0 ? q1Responses.reduce((sum, score) => sum + score, 0) / q1Responses.length : 0;
     
     // Analyze q9 (system reliability) if available
     const systemScores = data.map(s => {
@@ -186,7 +214,8 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
       if (q9Value === 'Poor') return 1;
       return 0;
     }).filter(score => score > 0);
-    const avgSystemScore = systemScores.reduce((sum, score) => sum + score, 0) / systemScores.length;
+    
+    const avgSystemScore = systemScores.length > 0 ? systemScores.reduce((sum, score) => sum + score, 0) / systemScores.length : 3;
 
     return {
       critical: avgPressure < 2.5 && avgSystemScore < 3.0,
@@ -260,14 +289,14 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
 
   // Prepare data for components
   const overviewData = {
-    totalResponses: responses.length,
-    avgSatisfaction: responses.length > 0 ? 
-      responses.reduce((sum, r) => sum + r.percent, 0) / responses.length : 0,
-    criticalIssues: insights.filter(i => i.type === 'critical' || i.type === 'urgent').length,
-    improvementAreas: insights.filter(i => i.type === 'improvement').length
+    totalResponses: responses?.length || 0,
+    avgSatisfaction: responses?.length > 0 ? 
+      responses.reduce((sum, r) => sum + (r.percent || 0), 0) / responses.length : 0,
+    criticalIssues: insights?.filter(i => i.type === 'critical' || i.type === 'urgent')?.length || 0,
+    improvementAreas: insights?.filter(i => i.type === 'improvement')?.length || 0
   };
 
-  const problemData = responses.length > 0 ? [
+  const problemData = responses?.length > 0 ? [
     { category: 'Communication', value: Math.round(Math.random() * 30 + 20), color: '#ef4444' },
     { category: 'Systems', value: Math.round(Math.random() * 25 + 15), color: '#f97316' },
     { category: 'Training', value: Math.round(Math.random() * 20 + 10), color: '#eab308' },
@@ -275,14 +304,14 @@ const AIInsights: React.FC<AIInsightsProps> = ({ userRole }) => {
     { category: 'Other', value: Math.round(Math.random() * 10 + 5), color: '#6b7280' }
   ] : [];
 
-  const categoryData = responses.length > 0 ? [
+  const categoryData = responses?.length > 0 ? [
     { name: 'Communication', score: Math.random() * 40 + 60, trend: Math.random() > 0.5 ? 'up' : 'down' },
     { name: 'Operations', score: Math.random() * 40 + 50, trend: Math.random() > 0.5 ? 'up' : 'down' },
     { name: 'Training', score: Math.random() * 40 + 55, trend: Math.random() > 0.5 ? 'up' : 'stable' },
     { name: 'Satisfaction', score: Math.random() * 30 + 70, trend: 'up' }
   ] : [];
 
-  const recommendations = insights.length > 0 ? insights.map(insight => ({
+  const recommendations = insights?.length > 0 ? insights.map(insight => ({
     id: insight.id,
     title: insight.title,
     description: insight.recommendation,

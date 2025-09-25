@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { hapticFeedback } from '../utils/haptics';
-import lightIconUrl from '@/assets/light mode.svg';
-import darkIconUrl from '@/assets/dark mode.svg';
+import lightIconUrl from '@/assets/light-mode.svg';
+import darkIconUrl from '@/assets/dark-mode.svg';
 
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
