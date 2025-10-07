@@ -16,6 +16,7 @@ import AMPerformanceInfographic from './AMPerformanceInfographic';
 import HRPerformanceInfographic from './HRPerformanceInfographic';
 import QuestionScoresInfographic from './QuestionScoresInfographic';
 import AMRadarChart from './AMRadarChart';
+import ReferenceDashboard from './ReferenceDashboard';
 import { UserRole, canAccessStore, canAccessAM, canAccessHR } from '../roleMapping';
 
 interface DashboardProps {
@@ -23,6 +24,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
+  const [activeTab, setActiveTab] = useState<'survey' | 'reference'>('survey');
   const [submissions, setSubmissions] = useState<Submission[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -134,10 +136,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         console.warn('Dashboard could not load mapping data:', error);
         // Fallback to constants
         setAllStores([
-          { name: 'Defence Colony', id: 'S027' },
-          { name: 'Khan Market', id: 'S037' },
-          { name: 'UB City', id: 'S007' },
-          { name: 'Koramangala 1', id: 'S001' }
+          { name: 'Defence Colony', id: 'S027', region: 'North' },
+          { name: 'Khan Market', id: 'S037', region: 'North' },
+          { name: 'UB City', id: 'S007', region: 'South' },
+          { name: 'Koramangala 1', id: 'S001', region: 'South' }
         ]);
         setAllAreaManagers(AREA_MANAGERS);
         setAllHRPersonnel(HR_PERSONNEL);
@@ -830,10 +832,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
                 // Try parsing the date - handle both ISO strings and other formats
                 let date: Date;
                 
-                // If it's already a Date object
-                if (submission.submissionTime instanceof Date) {
-                  date = submission.submissionTime;
-                } else if (typeof submission.submissionTime === 'string') {
+                if (typeof submission.submissionTime === 'string') {
                   // Handle ISO strings, timestamps, or other string formats
                   if (submission.submissionTime.includes('T') || submission.submissionTime.includes('-')) {
                     // ISO string format
@@ -1033,6 +1032,39 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
 
   return (
     <div className="space-y-6">
+      {/* Dashboard Tabs */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+        <div className="border-b border-gray-200 dark:border-slate-700">
+          <nav className="flex space-x-8 px-6">
+            <button
+              onClick={() => setActiveTab('survey')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'survey'
+                  ? 'border-sky-400 text-sky-400'
+                  : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-300'
+              }`}
+            >
+              📊 Survey Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('reference')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'reference'
+                  ? 'border-sky-400 text-sky-400'
+                  : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-300'
+              }`}
+            >
+              👥 Reference Dashboard
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'reference' ? (
+        <ReferenceDashboard userRole={userRole} />
+      ) : (
+        <div className="space-y-6">
       {/* Refresh Indicator */}
       {refreshing && (
         <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-3">
@@ -1129,6 +1161,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
         message={notificationMessage}
         type={notificationType}
       />
+        </div>
+      )}
     </div>
   );
 };

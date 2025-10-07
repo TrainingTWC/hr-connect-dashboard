@@ -2,6 +2,23 @@ function doPost(e) {
   try {
     var params = (e && e.parameter) ? e.parameter : {};
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Check if this is a reference check submission
+    if (params.submissionType === 'reference-check') {
+      return handleReferenceCheckSubmission(params, ss);
+    } else {
+      return handleSurveySubmission(params, ss);
+    }
+    
+  } catch (err) {
+    console.error('doPost error:', err);
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ERROR', message: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function handleSurveySubmission(params, ss) {
     var sheet = ss.getSheetByName('HR Connect');
     if (!sheet) throw new Error("Sheet 'HR Connect' not found");
 
@@ -104,12 +121,83 @@ function doPost(e) {
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'SUCCESS' }))
       .setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleReferenceCheckSubmission(params, ss) {
+  try {
+    var sheet = ss.getSheetByName('Reference Checks');
+    
+    // Create the sheet if it doesn't exist
+    if (!sheet) {
+      sheet = ss.insertSheet('Reference Checks');
+    }
+
+    // Header for reference check data
+    var header = [
+      'Server Timestamp',
+      'Submission Time',
+      'HR Name',
+      'HR ID',
+      'Candidate Name',
+      'Candidate ID',
+      'Reference Name',
+      'Reference Contact',
+      'Region',
+      'RC1 - Duration Known',
+      'RC2 - Designation',
+      'RC3 - Employment Duration',
+      'RC4 - Warning Letter',
+      'RC5 - Integrity Issue',
+      'RC6 - Punctuality',
+      'RC7 - Customer Behavior',
+      'RC8 - Rehiring Consideration',
+      'RC9 - Exit Reason',
+      'RC10 - Overall Feedback',
+      'Total Score',
+      'Percentage Score'
+    ];
+
+    // Ensure header row exists
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(header);
+    }
+
+    var data = [
+      new Date(),
+      params.submissionTime || new Date(),
+      params.hrName || '',
+      params.hrId || '',
+      params.candidateName || '',
+      params.candidateId || '',
+      params.referenceName || '',
+      params.referenceContact || '',
+      params.region || 'Unknown',
+      params.rc1 || '',
+      params.rc2 || '',
+      params.rc3 || '',
+      params.rc4 || '',
+      params.rc5 || '',
+      params.rc6 || '',
+      params.rc7 || '',
+      params.rc8 || '',
+      params.rc9 || '',
+      params.rc10 || '',
+      params.totalScore || '',
+      params.percentageScore || ''
+    ];
+
+    sheet.appendRow(data);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'SUCCESS' }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
   } catch (err) {
+    console.error('Reference check submission error:', err);
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'ERROR', message: String(err) }))
       .setMimeType(ContentService.MimeType.JSON);
   }
-}
 
 function doGet(e) {
   try {
@@ -118,6 +206,8 @@ function doGet(e) {
     
     if (action === 'getData') {
       return getDataFromSheet();
+    } else if (action === 'getReferenceData') {
+      return getReferenceDataFromSheet();
     }
     
     // Return empty response for other GET requests
@@ -267,4 +357,50 @@ function detectRegionFromStoreId(storeId) {
   
   // Return the region for the store ID, or 'Unknown' if not found
   return storeRegionMapping[storeId] || 'Unknown';
+}
+
+function getReferenceDataFromSheet() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Reference Checks');
+    
+    if (!sheet) {
+      // If Reference Checks sheet doesn't exist, return empty array
+      return ContentService
+        .createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) {
+      // No data or only headers
+      return ContentService
+        .createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var headers = data[0];
+    var results = [];
+    
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var obj = {};
+      
+      for (var j = 0; j < headers.length; j++) {
+        obj[headers[j]] = row[j];
+      }
+      
+      results.push(obj);
+    }
+    
+    return ContentService
+      .createTextOutput(JSON.stringify(results))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ERROR', message: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }
