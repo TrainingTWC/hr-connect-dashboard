@@ -522,12 +522,11 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto">
       {isLoading && <LoadingOverlay isVisible={isLoading} message="Submitting reference check..." />}
       
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8">
-        
-        {/* Meta Information Fields - Survey Details */}
+      <div className="space-y-6">
+        {/* Meta Information Fields - Reference Check Details */}
         <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
           <div className="font-bold text-gray-900 dark:text-slate-100 mb-4 text-lg">Reference Check Details</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -615,15 +614,16 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
         </div>
 
         {/* Reference Check Questions */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
             Reference Check Questions
           </h2>
           
-          {REFERENCE_QUESTIONS.map((question, index) => (
-            <div key={question.id} className="p-6 border border-gray-200 dark:border-slate-600 rounded-lg">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
+          <div className="space-y-6">
+            {REFERENCE_QUESTIONS.map((question, index) => (
+              <div key={question.id} className="p-6 border border-gray-200 dark:border-slate-600 rounded-lg">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                     {index + 1}. {question.question}
                   </h3>
@@ -674,10 +674,11 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
               )}
             </div>
           ))}
+          </div>
         </div>
 
         {/* Current Score Display */}
-        <div className="mt-8 p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg">
+        <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">Current Reference Score</p>
             <p className="text-3xl font-bold text-sky-600 dark:text-sky-400">{calculateScore().percentage}%</p>
@@ -685,7 +686,8 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
         </div>
 
         {/* Submit Button */}
-        <div className="mt-8 flex justify-center gap-4">
+        <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+          <div className="flex justify-center gap-4">
           <button
             onClick={resetForm}
             className="px-6 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors duration-200"
@@ -703,6 +705,7 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
           >
             {isLoading ? 'Submitting...' : 'Submit Reference Check'}
           </button>
+          </div>
         </div>
       </div>
     </div>
