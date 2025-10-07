@@ -8,6 +8,58 @@ import * as XLSX from 'xlsx';
 // Google Apps Script endpoint for fetching reference check data (fixed unified endpoint)
 const REFERENCE_SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwNZ-5uCFxrwZuJ2c76TXjmX_gwRrzAsXtfLPA3Pi9AhRqtFb2aR_ZzuQ0Yt0J21xJoNQ/exec';
 
+// Cache configuration
+const CACHE_KEY = 'reference_dashboard_cache';
+const CACHE_TIMESTAMP_KEY = 'reference_dashboard_cache_timestamp';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+// Cache utility functions
+const getCachedData = (): ReferenceCheckData[] | null => {
+  try {
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    const cacheTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+    
+    if (!cachedData || !cacheTimestamp) {
+      return null;
+    }
+    
+    const timestamp = parseInt(cacheTimestamp);
+    const now = Date.now();
+    
+    // Check if cache is still fresh
+    if (now - timestamp < CACHE_DURATION) {
+      console.log('Using cached reference data');
+      return JSON.parse(cachedData);
+    } else {
+      console.log('Cache expired, will fetch fresh data');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error reading cache:', error);
+    return null;
+  }
+};
+
+const setCachedData = (data: ReferenceCheckData[]) => {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+    console.log(`Cached ${data.length} reference records`);
+  } catch (error) {
+    console.error('Error setting cache:', error);
+  }
+};
+
+const clearCache = () => {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+    console.log('Reference data cache cleared');
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+  }
+};
+
 interface ReferenceCheckData {
   submissionTime: string;
   hrName: string;
@@ -37,11 +89,27 @@ interface ReferenceDashboardProps {
 }
 
 const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => {
-  const [referenceData, setReferenceData] = useState<ReferenceCheckData[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  // Initialize with cached data if available
+  const [referenceData, setReferenceData] = useState<ReferenceCheckData[] | null>(() => {
+    const cached = getCachedData();
+    return cached;
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    // Only show loading if we don't have cached data
+    const cached = getCachedData();
+    return cached === null;
+  });
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [lastRefresh, setLastRefresh] = useState<Date>(() => {
+    // Get cache timestamp or default to now
+    try {
+      const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+      return timestamp ? new Date(parseInt(timestamp)) : new Date();
+    } catch {
+      return new Date();
+    }
+  });
 
   // Filters
   const [filters, setFilters] = useState({
@@ -65,7 +133,18 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
     setTimeout(() => setShowNotification(false), 3000);
   };
 
-  const loadReferenceData = async (isRefresh = false) => {
+  const loadReferenceData = async (isRefresh = false, forceRefresh = false) => {
+    // If not forcing refresh and not explicitly refreshing, try cache first
+    if (!forceRefresh && !isRefresh) {
+      const cachedData = getCachedData();
+      if (cachedData) {
+        setReferenceData(cachedData);
+        setLoading(false);
+        console.log('Loaded reference data from cache');
+        return;
+      }
+    }
+
     if (isRefresh) {
       setRefreshing(true);
       hapticFeedback.strong();
@@ -77,7 +156,7 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
     setError(null);
     
     try {
-      console.log('Fetching reference check data from Google Sheets...');
+      console.log('Fetching fresh reference check data from Google Sheets...');
       
       // Try direct request first (works if CORS is properly configured)
       let response;
@@ -170,6 +249,9 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
       setReferenceData(mappedData);
       setLastRefresh(new Date());
       
+      // Cache the fresh data
+      setCachedData(mappedData);
+      
       if (isRefresh) {
         showNotificationMessage(`Successfully loaded ${data.length} reference check records`, 'success');
         hapticFeedback.success();
@@ -178,8 +260,21 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
     } catch (error) {
       console.error('Error fetching reference check data:', error);
       
+      // Try to use cached data if available, even if stale
+      const staleCache = localStorage.getItem(CACHE_KEY);
+      if (staleCache && !referenceData) {
+        try {
+          const cachedData = JSON.parse(staleCache);
+          setReferenceData(cachedData);
+          showNotificationMessage('Using cached data due to network error', 'info');
+          return;
+        } catch (cacheError) {
+          console.error('Error parsing stale cache:', cacheError);
+        }
+      }
+      
       // Show sample data when the sheet doesn't exist yet
-      setReferenceData([
+      const sampleData = [
         {
           submissionTime: new Date().toISOString(),
           hrName: 'Sample HR',
@@ -203,8 +298,9 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
           maxScore: '100',
           percent: '85'
         }
-      ]);
+      ];
       
+      setReferenceData(sampleData);
       setError('Failed to load reference check data. Showing sample data. Please ensure the "Reference Checks" sheet exists in your Google Sheets.');
       
       if (isRefresh) {
@@ -218,7 +314,24 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
   };
 
   useEffect(() => {
-    loadReferenceData();
+    // Load data on component mount
+    // If we don't have cached data, this will fetch fresh data
+    // If we have cached data, it will use that immediately and optionally fetch fresh data in background
+    const cachedData = getCachedData();
+    if (!cachedData) {
+      // No cache available, fetch fresh data
+      loadReferenceData();
+    } else {
+      // We have cached data, check if we should refresh in background
+      const cacheTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+      const cacheAge = cacheTimestamp ? Date.now() - parseInt(cacheTimestamp) : Infinity;
+      
+      // If cache is more than 2 minutes old, refresh in background
+      if (cacheAge > 2 * 60 * 1000) {
+        console.log('Cache is getting stale, refreshing in background');
+        loadReferenceData(false, true); // Force refresh but don't show loading
+      }
+    }
   }, []);
 
   // Filter data based on current filters
@@ -410,7 +523,7 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
           <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error Loading Data</h1>
           <p className="text-gray-500 dark:text-slate-400 mb-4">{error}</p>
           <button
-            onClick={() => loadReferenceData()}
+            onClick={() => loadReferenceData(false, true)}
             className="bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
           >
             Try Again
@@ -442,7 +555,7 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
             <button
-              onClick={() => loadReferenceData(true)}
+              onClick={() => loadReferenceData(true, true)}
               disabled={refreshing}
               className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full sm:w-auto ${
                 refreshing
@@ -476,10 +589,24 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
           </div>
         </div>
         
-        {/* Last refresh time */}
-        <p className="text-sm text-gray-500 dark:text-slate-400">
-          Last updated: {lastRefresh.toLocaleString()}
-        </p>
+        {/* Last refresh time with cache status */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm text-gray-500 dark:text-slate-400">
+          <span>Last updated: {lastRefresh.toLocaleString()}</span>
+          <span className="flex items-center gap-2 mt-1 sm:mt-0">
+            {(() => {
+              const cacheTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+              const cacheAge = cacheTimestamp ? Date.now() - parseInt(cacheTimestamp) : Infinity;
+              const isCached = cacheAge < CACHE_DURATION;
+              
+              return (
+                <>
+                  <span className={`w-2 h-2 rounded-full ${isCached ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                  {isCached ? 'Cached data' : 'Live data'}
+                </>
+              );
+            })()}
+          </span>
+        </div>
       </div>
 
       {/* Statistics Cards */}

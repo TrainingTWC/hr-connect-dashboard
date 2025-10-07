@@ -192,6 +192,7 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
 
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [finalScore, setFinalScore] = useState<{achieved: number, total: number, percentage: number} | null>(null);
 
   // Available HR Personnel filtered by user role (same as Survey)
   const availableHRPersonnel = useMemo(() => {
@@ -449,6 +450,9 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
         }
 
         console.log('Reference check submitted successfully');
+        
+        // Store the final score before clearing data
+        setFinalScore(scoreData);
         setSubmitted(true);
         
         // Clear form data
@@ -492,6 +496,7 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
       empId: ''
     });
     setSubmitted(false);
+    setFinalScore(null); // Clear the stored final score
     localStorage.removeItem('reference_resp');
     localStorage.removeItem('reference_meta');
     hapticFeedback.tap();
@@ -508,7 +513,7 @@ const ReferenceCheck: React.FC<ReferenceCheckProps> = ({ userRole }) => {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reference Check Submitted Successfully!</h2>
           <p className="text-gray-600 dark:text-slate-300 mb-6">
-            The reference check has been recorded with a score of <span className="font-bold text-sky-600 dark:text-sky-400">{calculateScore().percentage}%</span>.
+            The reference check has been recorded with a score of <span className="font-bold text-sky-600 dark:text-sky-400">{finalScore?.percentage || 0}%</span>.
           </p>
           <button
             onClick={resetForm}
