@@ -431,20 +431,20 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
 
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
               Reference Check Dashboard
             </h1>
             <p className="text-gray-600 dark:text-slate-300 mt-2">
               Monitor and analyze reference check submissions
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
             <button
               onClick={() => loadReferenceData(true)}
               disabled={refreshing}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full sm:w-auto ${
                 refreshing
                   ? 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
@@ -466,7 +466,7 @@ const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({ userRole }) => 
             </button>
             <button
               onClick={exportToExcel}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full sm:w-auto"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
